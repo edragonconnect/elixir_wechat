@@ -13,13 +13,13 @@
 
 1. 使用该SDK直接对接某个微信公众号完成该公众号的开发
 
-	* 直接对接某个微信公众号，该SDK用作 “hub” 的使用场景，SDK需要提供一些必要的方法提供需要缓存（持久化）的数据操作途径，这时可以通过定义、实现 [WeChat.Adapter.Storage.Hub]() 行为，来完成相关的`access_token`持久化适配。
-	* 直接对接某个微信公众号，该SDK用作 “client” 的使用场景，SDK仅需要提供一些方法从“hub”获取、清空`access_token`，这时可以通过定义、实现 [WeChat.Adapter.Storage.Client]() 行为，来完成相关的`access_token`持久化适配。
+	* 直接对接某个微信公众号，该SDK用作 “hub” 的使用场景，SDK需要提供一些必要的方法提供需要缓存（持久化）的数据操作途径，这时可以通过定义、实现 [WeChat.Adapter.Storage.Hub](https://hexdocs.pm/elixir_wechat/WeChat.Adapter.Storage.Hub.html) 行为，来完成相关的`access_token`持久化适配。
+	* 直接对接某个微信公众号，该SDK用作 “client” 的使用场景，SDK仅需要提供一些方法从“hub”获取、清空`access_token`，这时可以通过定义、实现 [WeChat.Adapter.Storage.Client](https://hexdocs.pm/elixir_wechat/WeChat.Adapter.Storage.Client.html) 行为，来完成相关的`access_token`持久化适配。
 
 2. 使用该SDK对接某个微信第三方平台应用，通过公众号授权相关功能给这个第三方平台的应用，将通过第三方平台应用来调用已授权公众号的相关接口
 
-	* 对接第三方平台应用，该SDK用作 “hub” 的使用场景，SDK需要提供一些必要的方法提供需要缓存（持久化）的数据操作途径，这时可以通过定义、实现 [WeChat.Adapter.Storage.ComponentHub]() 行为，来完成相关的`access_token`/`component_access_token`持久化适配。
-	* 对接第三方平台应用，该SDK用作 “client” 的使用场景，SDK仅需要提供一些方法从 component application “hub” 获取、清空`access_token`/`component_access_token`，这时可以通过定义、实现 [WeChat.Adapter.Storage.ComponentClient]() 行为，来完成相关的`access_token`/`component_access_token`持久化适配。
+	* 对接第三方平台应用，该SDK用作 “hub” 的使用场景，SDK需要提供一些必要的方法提供需要缓存（持久化）的数据操作途径，这时可以通过定义、实现 [WeChat.Adapter.Storage.ComponentHub](https://hexdocs.pm/elixir_wechat/WeChat.Adapter.Storage.ComponentHub.html) 行为，来完成相关的`access_token`/`component_access_token`持久化适配。
+	* 对接第三方平台应用，该SDK用作 “client” 的使用场景，SDK仅需要提供一些方法从 component application “hub” 获取、清空`access_token`/`component_access_token`，这时可以通过定义、实现 [WeChat.Adapter.Storage.ComponentClient](https://hexdocs.pm/elixir_wechat/WeChat.Adapter.Storage.ComponentClient.html) 行为，来完成相关的`access_token`/`component_access_token`持久化适配。
 
 **注意*：无论是直接对接公众号开发，还是第三方应用的集成，SDK默认是作为 “client” 的使用场景，且对 “hub” 实现一套默认Http请求操作（详情请见`WeChat.Storage.Default`）
 
@@ -134,7 +134,7 @@ end
 
 ## 文档
 
-更多详情请见文档
+更多详情请见[文档](https://hexdocs.pm/elixir_wechat/readme.html)
 
 ```bash
 $ MIX_ENV=docs mix docs
