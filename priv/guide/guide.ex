@@ -11,7 +11,7 @@ defmodule GlobalAppIdClient do
       end
 
   Options:
-  - `:appid`    - the appid of wechat official account.
+  - `:appid`    - the appid of WeChat official account.
   - `:scenario`    - the scenario of initialized client, options: `:hub` or `:client`, set as `:hub` option means it is self-manange access token in the hub, we need to
                   do it when using this library in the Server side, set as `:client` option means this library sends refresh request to the hub to fetch valid access token, 
                   using `:client` by default.
@@ -20,7 +20,7 @@ defmodule GlobalAppIdClient do
                          behaviour module.
 
   """
-  use WeChat, appid: "testappid"
+  use WeChat, appid: "myappid"
 end
 
 defmodule DynamicAppIdClient do
@@ -29,15 +29,14 @@ defmodule DynamicAppIdClient do
 
   Initialize a WeChat client without `appid` configuration, each time when invoke WeChat services need to input the `appid`.
 
-  This suite is for using `#{Mix.Project.config[:app]}` library in the Server side, and can serve multiple accounts dynamically.
+  This suite is for using `#{Mix.Project.config[:app]}` library in the Server side, and can serve multiple WeChat official accounts dynamically.
 
       defmodule WeChat.MyApp do
         use WeChat
       end
 
   Options:
-  - `:appid`    - the appid of wechat official account.
-                  `:client` option will send refresh request to the hub to fetch access token, using `:client` by default.
+  - `:appid`    - the appid of WeChat official account.
   - `:scenario`     - the scenario of initialized client, options: `:hub` or `:client`, set as `:hub` option means it is self-manange access token in the hub, we need to
                   do it when using this library in the Server side, set as `:client` option means this library sends refresh request to the hub to fetch valid access token, 
                   using `:client` by default.
@@ -61,7 +60,7 @@ defmodule GlobalComponentAppIdClient do
       end
 
   Options:
-  - `:appid`    - the appid of wechat 3rd-party platform application.
+  - `:appid`    - the appid of WeChat 3rd-party platform application.
   - `:scenario`     - the scenario of initialized client, options: `:hub` or `:client`, set as `:hub` option means it is self-manange access token in the hub, we need to
                   do it when using this library in the Server side, set as `:client` option means this library sends refresh request to the hub to fetch valid access token
                   of authorizer, using `:client` by default.
@@ -78,14 +77,14 @@ defmodule DynamicComponentAppIdClient do
 
   Initialize a WeChat Component client without `component_appid` configuration, each time when invoke WeChat services need to input the `component_appid`.
 
-  This suite is for using `#{Mix.Project.config[:app]}` library in the Server side, and can serve multiple accounts dynamically.
+  This suite is for using `#{Mix.Project.config[:app]}` library in the Server side, and can serve multiple WeChat 3rd-party platform applications dynamically.
 
       defmodule WeChat.MyComponentApp do
         use WeChat.Component
       end
 
   Options:
-  - `:appid`    - the appid of wechat third platform application.
+  - `:appid`    - the appid of WeChat 3rd-party platform application.
   - `:scenario`     - the scenario of initialized client, options: `:hub` or `:client`, set as `:hub` option means it is self-manange access token in the hub, we need to
                   do it when using this library in the Server side, set as `:client` option means this library sends refresh request to the hub to fetch access token, 
                   using `:client` by default.
