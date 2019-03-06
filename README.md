@@ -1,6 +1,6 @@
 # Elixir for WeChat
 
-用于微信公众号开放生态环境下构建Elixir版本应用:
+用于微信公众号开放生态环境下构建Elixir应用:
 
 * 支持绝大多数 [微信公众号开放](https://mp.weixin.qq.com/wiki) 接口
 * 支持 [微信第三方平台应用](https://open.weixin.qq.com/cgi-bin/showdocument?action=dir_list&t=resource/res_list&verify=1&id=open1419318292) 接口
@@ -25,7 +25,7 @@
 
 ## 如何使用
 
-### 添加至依赖
+### 添加至项目依赖
 
 ```elixir
 def deps do
