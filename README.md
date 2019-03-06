@@ -148,7 +148,7 @@ $ MIX_ENV=docs mix docs
 
 我们预设使用这个SDK的时候，依然会参考微信官方的接口文档，SDK的使用者需要准备对应接口所需的参数（除了`access_token`和`component_access_token`）及相关性校验，该SDK只负责接口的调用，具体业务参数的校验目前不在处理范围中。
 
-生成的微信接口方法请见文档中的“MODULES - GUIDE”，或了解测试用例。
+生成的微信接口方法请见文档中的 [MODULES - GUIDE](https://hexdocs.pm/elixir_wechat/DynamicAppIdClient.html)，或了解测试用例。
 
 ## Lincese
 
