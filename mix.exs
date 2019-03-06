@@ -72,7 +72,7 @@ defmodule WeChat.MixProject do
 
   defp package do
     [
-      files: ["lib", "mix.exs", "README.md", "LICENSE.md"],
+      files: ["lib", "mix.exs", "README.md", "LICENSE.md", "config/*.toml"],
       maintainers: ["Xin Zou"],
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/edragonconnect/elixir_wechat"}
