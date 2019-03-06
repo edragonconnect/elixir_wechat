@@ -10,6 +10,8 @@ defmodule WeChat.MixProject do
       elixirc_paths: elixirc_paths(Mix.env),
       deps: deps(),
       docs: docs(),
+      description: description(),
+      package: package(),
     ]
   end
 
@@ -61,6 +63,19 @@ defmodule WeChat.MixProject do
           WeChat.UploadMediaContent
         ]
       ]
+    ]
+  end
+
+  defp description() do
+    "WeChat SDK for Elixir"
+  end
+
+  defp package do
+    [
+      files: ["lib", "mix.exs", "README.md", "LICENSE.md"],
+      maintainers: ["Xin Zou"],
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/edragonconnect/elixir_wechat"}
     ]
   end
 end
