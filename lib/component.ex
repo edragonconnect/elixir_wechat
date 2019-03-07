@@ -65,7 +65,7 @@ defmodule WeChat.Component do
         end
 
         @doc"""
-        Refresh authorizer access_token in `:hub` scenario
+        Refresh authorizer access_token in `:hub` scenario.
 
           ```elixir
           refresh_access_token(appid, authorizer_appid, [access_token: access_token])
@@ -84,7 +84,7 @@ defmodule WeChat.Component do
         end
 
         @doc"""
-        Refresh component access_token in `:hub` scenario
+        Refresh component access_token in `:hub` scenario.
 
           ```elixir
           refresh_component_access_token(appid, [component_access_token: component_access_token])
@@ -140,7 +140,7 @@ defmodule WeChat.Component do
         end
 
         @doc"""
-        Refresh authorizer access_token in `:hub` scenario
+        Refresh authorizer access_token in `:hub` scenario.
 
           ```elixir
           refresh_access_token(authorizer_appid, [access_token: access_token])
@@ -159,7 +159,7 @@ defmodule WeChat.Component do
         end
 
         @doc"""
-        Refresh component access_token in `:hub` scenario
+        Refresh component access_token in `:hub` scenario.
 
           ```elixir
           refresh_component_access_token(authorizer_appid, [component_access_token: component_access_token])

@@ -160,7 +160,7 @@ defmodule WeChat do
         end
 
         @doc"""
-        Refresh access_token of common application in `:hub` scenario
+        Refresh access_token of common application in `:hub` scenario.
 
           ```elixir
           refresh_access_token([access_token: access_token])
@@ -204,7 +204,7 @@ defmodule WeChat do
         end
 
         @doc"""
-        Refresh access_token of common application in `:hub` scenario
+        Refresh access_token of common application in `:hub` scenario.
 
           ```elixir
           refresh_access_token(appid, [access_token: access_token])
