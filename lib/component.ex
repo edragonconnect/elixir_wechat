@@ -64,6 +64,13 @@ defmodule WeChat.Component do
           unquote(__MODULE__).Base.set_access_token(appid, response_body, options, @adapter_storage)
         end
 
+        @doc"""
+        Refresh authorizer access_token in `:hub` scenario
+
+          ```elixir
+          refresh_access_token(appid, authorizer_appid, [access_token: access_token])
+          ```
+        """
         def refresh_access_token(appid, authorizer_appid, options) do
           unquote(__MODULE__).Base.refresh_access_token(appid, authorizer_appid, options, @adapter_storage)
         end
@@ -76,6 +83,13 @@ defmodule WeChat.Component do
           unquote(__MODULE__).Base.set_component_access_token(appid, response_body, options, @adapter_storage)
         end
 
+        @doc"""
+        Refresh component access_token in `:hub` scenario
+
+          ```elixir
+          refresh_component_access_token(appid, [component_access_token: component_access_token])
+          ```
+        """
         def refresh_component_access_token(appid, options) do
           unquote(__MODULE__).Base.refresh_component_access_token(appid, options, @adapter_storage)
         end
@@ -94,11 +108,17 @@ defmodule WeChat.Component do
           unquote(__MODULE__).Base.get_access_token(appid, authorizer_appid, __MODULE__, @scenario, @adapter_storage)
         end
 
-
         def get_component_access_token(appid) do
           unquote(__MODULE__).Base.get_component_access_token(appid, __MODULE__, @scenario, @adapter_storage)
         end
 
+        @doc"""
+        Refresh authorizer access_token in `:client` scenario, by default a refresh request will be sent to the hub server to fetch a fresh access_token.
+
+          ```elixir
+          refresh_access_token(appid, authorizer_appid, [access_token: access_token])
+          ```
+        """
         def refresh_access_token(appid, authorizer_appid, options) do
           unquote(__MODULE__).Base.refresh_access_token(appid, authorizer_appid, options, @adapter_storage)
         end
@@ -119,6 +139,13 @@ defmodule WeChat.Component do
           unquote(__MODULE__).Base.set_access_token(@wechat_appid, response_body, options, @adapter_storage)
         end
 
+        @doc"""
+        Refresh authorizer access_token in `:hub` scenario
+
+          ```elixir
+          refresh_access_token(authorizer_appid, [access_token: access_token])
+          ```
+        """
         def refresh_access_token(authorizer_appid, options) do
           unquote(__MODULE__).Base.refresh_access_token(@wechat_appid, authorizer_appid, options, @adapter_storage)
         end
@@ -131,6 +158,13 @@ defmodule WeChat.Component do
           unquote(__MODULE__).Base.set_component_access_token(@wechat_appid, response_body, options, @adapter_storage)
         end
 
+        @doc"""
+        Refresh component access_token in `:hub` scenario
+
+          ```elixir
+          refresh_component_access_token(authorizer_appid, [component_access_token: component_access_token])
+          ```
+        """
         def refresh_component_access_token(options) do
           unquote(__MODULE__).Base.refresh_component_access_token(@wechat_appid, options, @adapter_storage)
         end
@@ -154,6 +188,13 @@ defmodule WeChat.Component do
           unquote(__MODULE__).Base.get_component_access_token(@wechat_appid, __MODULE__, @scenario, @adapter_storage)
         end
 
+        @doc"""
+        Refresh authorizer access_token in `:client` scenario, by default a refresh request will be sent to the hub server to fetch a fresh access_token.
+
+          ```elixir
+          refresh_access_token(authorizer_appid, [access_token: access_token])
+          ```
+        """
         def refresh_access_token(authorizer_appid, options) do
           unquote(__MODULE__).Base.refresh_access_token(@wechat_appid, authorizer_appid, options, @adapter_storage)
         end

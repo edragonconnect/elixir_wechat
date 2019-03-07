@@ -159,6 +159,13 @@ defmodule WeChat do
           unquote(__MODULE__).Base.set_access_token(@wechat_appid, response_body, options, unquote(opts))
         end
 
+        @doc"""
+        Refresh access_token of common application in `:hub` scenario
+
+          ```elixir
+          refresh_access_token([access_token: access_token])
+          ```
+        """
         def refresh_access_token(options) do
           unquote(__MODULE__).Base.refresh_access_token(@wechat_appid, options, unquote(opts))
         end
@@ -169,6 +176,13 @@ defmodule WeChat do
           unquote(__MODULE__).Base.get_access_token(@wechat_appid, __MODULE__, @scenario, unquote(opts))
         end
 
+        @doc"""
+        Refresh access_token of common application in `:client` scenario, by default a refresh request will be sent to the hub server to fetch a fresh access_token.
+
+          ```elixir
+          refresh_access_token([access_token: access_token])
+          ```
+        """
         def refresh_access_token(options) do
           unquote(__MODULE__).Base.refresh_access_token(@wechat_appid, options, unquote(opts))
         end
@@ -189,6 +203,13 @@ defmodule WeChat do
           unquote(__MODULE__).Base.set_access_token(appid, response_body, options, unquote(opts))
         end
 
+        @doc"""
+        Refresh access_token of common application in `:hub` scenario
+
+          ```elixir
+          refresh_access_token(appid, [access_token: access_token])
+          ```
+        """
         def refresh_access_token(appid, options) do
           unquote(__MODULE__).Base.refresh_access_token(appid, options, unquote(opts))
         end
@@ -199,6 +220,13 @@ defmodule WeChat do
           unquote(__MODULE__).Base.get_access_token(appid, __MODULE__, @scenario, unquote(opts))
         end
 
+        @doc"""
+        Refresh access_token of common application in `:client` scenario, by default a refresh request will be sent to the hub server to fetch a fresh access_token.
+
+          ```elixir
+          refresh_access_token(appid, [access_token: access_token])
+          ```
+        """
         def refresh_access_token(appid, options) do
           unquote(__MODULE__).Base.refresh_access_token(appid, options, unquote(opts))
         end
