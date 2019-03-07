@@ -14,8 +14,8 @@ defmodule WeChat.Storage.Default do
   end
 
   @impl true
-  def delete_access_token(appid, access_token) do
-    HubClient.delete_access_token(appid, access_token)
+  def refresh_access_token(appid, access_token) do
+    HubClient.refresh_access_token(appid, access_token)
   end
 end
 
@@ -43,12 +43,12 @@ defmodule WeChat.Storage.ComponentDefault do
   end
 
   @impl true
-  def delete_access_token(
+  def refresh_access_token(
         appid,
         authorizer_appid,
         access_token
       ) do
-    HubClient.delete_access_token(appid, authorizer_appid, access_token)
+    HubClient.refresh_access_token(appid, authorizer_appid, access_token)
   end
 end
 
@@ -68,33 +68,23 @@ defmodule WeChat.Storage.Default.HubClient do
 
   alias WeChat.Error
 
-  def refresh_token(appid) do
+  def refresh_access_token(appid, access_token) do
     Logger.info("send refresh_token request to wechat hub for appid: #{inspect appid}")
     token =
       "/refresh/access_token"
-      |> post(%{appid: appid})
+      |> post(%{appid: appid, access_token: access_token})
       |> fetch_access_token()
     Logger.info("received refreshed token from wechat hub: #{inspect token} for appid: #{inspect appid}")
     token
   end
 
-  def refresh_token(appid, authorizer_appid) do
+  def refresh_access_token(appid, authorizer_appid, access_token) do
     Logger.info("send refresh_token request to wechat hub for appid: #{inspect appid} with authorizer_appid: #{inspect authorizer_appid}")
     token =
       "/refresh/access_token"
-      |> post(%{appid: appid, authorizer_appid: authorizer_appid})
+      |> post(%{appid: appid, authorizer_appid: authorizer_appid, access_token: access_token})
       |> fetch_access_token()
     Logger.info("received access token from wechat hub: #{inspect token} for appid: #{inspect appid} with authorizer_appid: #{inspect authorizer_appid}")
-    token
-  end
-
-  def refresh_component_access_token(appid) do
-    Logger.info("send refresh_component_access_token request to wechat hub for appid: #{inspect appid}")
-    token =
-      "/refresh/access_token"
-      |> post(%{appid: appid, type: "component"})
-      |> fetch_access_token()
-    Logger.info("received component access token from wechat hub: #{inspect token} for appid: #{inspect appid}")
     token
   end
 
@@ -114,16 +104,6 @@ defmodule WeChat.Storage.Default.HubClient do
     "/client/component_access_token"
     |> get(query: [appid: appid])
     |> fetch_access_token()
-  end
-
-  def delete_access_token(appid, access_token) do
-    "/client/delete_access_token"
-    |> post(%{appid: appid, access_token: access_token})
-  end
-
-  def delete_access_token(appid, authorizer_appid, access_token) do
-    "/client/delete_access_token"
-    |> post(%{appid: appid, authorizer_appid: authorizer_appid, access_token: access_token})
   end
 
   defp fetch_access_token(response) do

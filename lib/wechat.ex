@@ -156,11 +156,11 @@ defmodule WeChat do
         end
 
         def set_access_token(response_body, options) do
-          unquote(__MODULE__).Base.set_access_token(response_body, options, unquote(opts))
+          unquote(__MODULE__).Base.set_access_token(@wechat_appid, response_body, options, unquote(opts))
         end
 
-        def clean_access_token(options) do
-          unquote(__MODULE__).Base.clean_access_token(@wechat_appid, options, unquote(opts))
+        def refresh_access_token(options) do
+          unquote(__MODULE__).Base.refresh_access_token(@wechat_appid, options, unquote(opts))
         end
 
       else
@@ -169,8 +169,8 @@ defmodule WeChat do
           unquote(__MODULE__).Base.get_access_token(@wechat_appid, __MODULE__, @scenario, unquote(opts))
         end
 
-        def clean_access_token(options) do
-          unquote(__MODULE__).Base.clean_access_token(@wechat_appid, options, unquote(opts))
+        def refresh_access_token(options) do
+          unquote(__MODULE__).Base.refresh_access_token(@wechat_appid, options, unquote(opts))
         end
 
       end
@@ -185,12 +185,12 @@ defmodule WeChat do
           unquote(__MODULE__).Base.get_access_token(appid, __MODULE__, @scenario, unquote(opts))
         end
 
-        def set_access_token(response_body, options) do
-          unquote(__MODULE__).Base.set_access_token(response_body, options, unquote(opts))
+        def set_access_token(appid, response_body, options) do
+          unquote(__MODULE__).Base.set_access_token(appid, response_body, options, unquote(opts))
         end
 
-        def clean_access_token(appid, options) do
-          unquote(__MODULE__).Base.clean_access_token(appid, options, unquote(opts))
+        def refresh_access_token(appid, options) do
+          unquote(__MODULE__).Base.refresh_access_token(appid, options, unquote(opts))
         end
 
       else
@@ -199,8 +199,8 @@ defmodule WeChat do
           unquote(__MODULE__).Base.get_access_token(appid, __MODULE__, @scenario, unquote(opts))
         end
 
-        def clean_access_token(appid, options) do
-          unquote(__MODULE__).Base.clean_access_token(appid, options, unquote(opts))
+        def refresh_access_token(appid, options) do
+          unquote(__MODULE__).Base.refresh_access_token(appid, options, unquote(opts))
         end
 
       end
@@ -230,8 +230,6 @@ defmodule WeChat.Base do
   @moduledoc false
   require Logger
 
-  alias WeChat.Http
-
   def get_access_token(appid, module, scenario = :hub, opts) do
     adapter_storage = Keyword.get(opts, :adapter_storage)
     token = adapter_storage.get_access_token(appid)
@@ -252,20 +250,18 @@ defmodule WeChat.Base do
     token.access_token
   end
 
-  def set_access_token(response_body, options, opts) do
+  def set_access_token(appid, response_body, options, opts) do
     adapter_storage = Keyword.get(opts, :adapter_storage)
-
     Logger.info("set_access_token, response_body: #{inspect response_body}, options: #{inspect options}")
     access_token = Map.get(response_body, "access_token")
-    appid = Http.grep_appid(options)
     adapter_storage.save_access_token(appid, access_token)
   end
 
-  def clean_access_token(appid, options, opts) do
+  def refresh_access_token(appid, options, opts) do
     adapter_storage = Keyword.get(opts, :adapter_storage)
     access_token = Keyword.get(options, :access_token)
     Logger.info("clean access_token for appid: #{appid}, expired access_token: #{access_token}")
-    adapter_storage.delete_access_token(appid, access_token)
+    adapter_storage.refresh_access_token(appid, access_token)
   end
 
   defp remote_get_access_token(appid, module) do

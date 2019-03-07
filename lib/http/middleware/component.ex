@@ -163,17 +163,25 @@ defmodule WeChat.Http.Middleware.Component do
   end
 
   defp append_component_access_token(env, options) do
-    wechat_component_module = Keyword.get(options, :module)
-    component_access_token =
-      cond do
-        function_exported?(wechat_component_module, :get_component_access_token, 1) ->
-          apply(wechat_component_module, :get_component_access_token, [Http.grep_appid(options)])
-        true ->
-          apply(wechat_component_module, :get_component_access_token, [])
+    refreshed_component_access_token = Keyword.get(options, :refreshed_component_access_token)
+
+    required =
+      if refreshed_component_access_token == nil do
+        wechat_component_module = Keyword.get(options, :module)
+        component_access_token =
+          cond do
+            function_exported?(wechat_component_module, :get_component_access_token, 1) ->
+              apply(wechat_component_module, :get_component_access_token, [Http.grep_appid(options)])
+            true ->
+              apply(wechat_component_module, :get_component_access_token, [])
+          end
+        Logger.info ">>> auto append_component_access_token wechat_component_module: #{inspect wechat_component_module}"
+        Logger.info ">>> auto append_component_access_token component_access_token: #{inspect component_access_token}"
+        [component_access_token: component_access_token]
+      else
+        Logger.info ">>> auto append_component_access_token using the latest refreshed component_access_token: #{inspect refreshed_component_access_token}"
+        [component_access_token: refreshed_component_access_token]
       end
-    Logger.info ">>> append_component_access_token wechat_component_module: #{inspect wechat_component_module}"
-    Logger.info ">>> append_component_access_token component_access_token: #{inspect component_access_token}"
-    required = [component_access_token: component_access_token]
     Map.update!(env, :query, &(Keyword.merge(&1, required)))
   end
 
@@ -266,8 +274,8 @@ defmodule WeChat.Http.Middleware.Component do
         "authorizer_refresh_token" => Map.get(response_body, "authorizer_refresh_token"),
         "expires_in" => expires_in
       }
-
-      apply(wechat_module, :set_access_token, [updated_response_body, options])
+      appid = Http.grep_appid(options)
+      apply(wechat_module, :set_access_token, [appid, updated_response_body, options])
     end
   end
 
@@ -287,8 +295,8 @@ defmodule WeChat.Http.Middleware.Component do
         "component_access_token" => component_access_token,
         "expires_in" => expires_in
       }
-
-      apply(wechat_module, :set_component_access_token, [updated_response_body, options])
+      appid = Http.grep_appid(options)
+      apply(wechat_module, :set_component_access_token, [appid, updated_response_body, options])
     end
   end
 
@@ -375,9 +383,10 @@ defmodule WeChat.Http.Middleware.Component do
       errcode in [40001, 42001] ->
         wechat_appid = Http.grep_appid(options)
         wechat_module = Keyword.get(options, :module)
-        Logger.info "when invoke wechat component apis occurs expired component_access_token for wechat_appid: #{wechat_appid}, will clean and refetch component_access_token"
-        apply(wechat_module, :clean_component_access_token, [Keyword.merge(options, request_query)])
-        execute(env, next, options)
+        Logger.info "when invoke wechat component apis occurs expired component_access_token for wechat_appid: #{wechat_appid}, will refresh to fetch a new component_access_token"
+        new_component_access_token = apply(wechat_module, :refresh_component_access_token, [wechat_appid, Keyword.merge(options, request_query)])
+        updated_options = Keyword.put(options, :refreshed_component_access_token, new_component_access_token)
+        execute(env, next, updated_options)
       errcode in [61005, 61006] ->
         wechat_appid = Http.grep_appid(options)
         Logger.error "component_verify_ticket of appid: #{wechat_appid} is expired or invalid (errcode: #{errcode}), please re-auth or update verify_ticket"

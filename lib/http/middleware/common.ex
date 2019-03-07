@@ -46,32 +46,40 @@ defmodule WeChat.Http.Middleware.Common do
   end
 
   defp populate_access_token(_uri, env, options) do
-    wechat_module = Keyword.get(options, :module)
+    refreshed_access_token = Keyword.get(options, :refreshed_access_token)
 
-    using_wechat_common_behaviour = Keyword.get(options, :wechat, []) |> Keyword.get(:using_wechat_common_behaviour, true)
+    required =
+      if refreshed_access_token == nil do
+        wechat_module = Keyword.get(options, :module)
 
-    access_token =
-      if using_wechat_common_behaviour == true do
-        cond do
-          function_exported?(wechat_module, :get_access_token, 1) ->
-            appid = Http.grep_appid(options)
-            apply(wechat_module, :get_access_token, [appid])
-          true ->
-            apply(wechat_module, :get_access_token, [])
-        end
+        using_wechat_common_behaviour = Keyword.get(options, :wechat, []) |> Keyword.get(:using_wechat_common_behaviour, true)
+
+        access_token =
+          if using_wechat_common_behaviour == true do
+            cond do
+              function_exported?(wechat_module, :get_access_token, 1) ->
+                appid = Http.grep_appid(options)
+                apply(wechat_module, :get_access_token, [appid])
+              true ->
+                apply(wechat_module, :get_access_token, [])
+            end
+          else
+            authorizer_appid = Keyword.get(options, :authorizer_appid)
+            cond do
+              function_exported?(wechat_module, :get_access_token, 2) ->
+                appid = Http.grep_appid(options)
+                apply(wechat_module, :get_access_token, [appid, authorizer_appid])
+              true ->
+                apply(wechat_module, :get_access_token, [authorizer_appid])
+            end
+          end
+        Logger.info(">>> auto populate_access_token #{wechat_module} with access_token: #{access_token}")
+        [access_token: access_token]
       else
-        authorizer_appid = Keyword.get(options, :authorizer_appid)
-        cond do
-          function_exported?(wechat_module, :get_access_token, 2) ->
-            appid = Http.grep_appid(options)
-            apply(wechat_module, :get_access_token, [appid, authorizer_appid])
-          true ->
-            apply(wechat_module, :get_access_token, [authorizer_appid])
-        end
+        Logger.info(">>> auto populate_access_token using the latest refreshed access_token: #{refreshed_access_token}")
+        [access_token: refreshed_access_token]
       end
 
-    Logger.info(">>>>> auto populate_access_token #{wechat_module} with access_token: #{access_token}")
-    required = [access_token: access_token]
     Map.update!(env, :query, &(Keyword.merge(&1, required)))
   end
 
@@ -138,7 +146,8 @@ defmodule WeChat.Http.Middleware.Common do
 
   defp reserve_access_token(%URI{path: "/cgi-bin/token"}, response_body, options) do
     wechat_module = Keyword.get(options, :module)
-    apply(wechat_module, :set_access_token, [response_body, options])
+    appid = Http.grep_appid(options)
+    apply(wechat_module, :set_access_token, [appid, response_body, options])
   end
 
   defp reserve_access_token(_uri, _response_body, _options) do
@@ -154,14 +163,16 @@ defmodule WeChat.Http.Middleware.Common do
         wechat_appid = Http.grep_appid(options)
         authorizer_appid = Keyword.get(options, :authorizer_appid)
         wechat_module = Keyword.get(options, :module)
-        if authorizer_appid != nil do
-          Logger.info "when invoke wechat common apis occurs expired or invalid access_token for component_appid: #{wechat_appid} and authorizer_appid: #{authorizer_appid}, will clean and refetch it."
-          apply(wechat_module, :clean_access_token, [authorizer_appid, Keyword.merge(options, request_query)])
-        else
-          Logger.info "when invoke wechat common apis occurs expired or invalid access_token for wechat_appid: #{wechat_appid}, will clean and refetch it."
-          apply(wechat_module, :clean_access_token, [options])
-        end
-        execute(env, next, options)
+        new_access_token =
+          if authorizer_appid != nil do
+            Logger.info "when invoke wechat common apis occurs expired or invalid access_token for component_appid: #{wechat_appid} and authorizer_appid: #{authorizer_appid}, will refresh to fetch a new access_token."
+            apply(wechat_module, :refresh_access_token, [authorizer_appid, Keyword.merge(options, request_query)])
+          else
+            Logger.info "when invoke wechat common apis occurs expired or invalid access_token for wechat_appid: #{wechat_appid}, will refresh to fetch a new access_token."
+            apply(wechat_module, :refresh_access_token, [options])
+          end
+        updated_options = Keyword.put(options, :refreshed_access_token, new_access_token)
+        execute(env, next, updated_options)
       errcode == 61024 ->
         Logger.error "invalid usecase to get access_token of authorizer_appid by wechat component"
         {:error, %Error{reason: :invalid_usecase_get_access_token, errcode: errcode, message: Map.get(response_result, "errmsg")}}

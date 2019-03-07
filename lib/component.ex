@@ -60,24 +60,24 @@ defmodule WeChat.Component do
           unquote(__MODULE__).Base.get_access_token(appid, authorizer_appid, __MODULE__, @scenario, @adapter_storage)
         end
 
-        def set_access_token(response_body, options) do
-          unquote(__MODULE__).Base.set_access_token(response_body, options, @adapter_storage)
+        def set_access_token(appid, response_body, options) do
+          unquote(__MODULE__).Base.set_access_token(appid, response_body, options, @adapter_storage)
         end
 
-        def clean_access_token(appid, authorizer_appid, options) do
-          unquote(__MODULE__).Base.clean_access_token(appid, authorizer_appid, options, @adapter_storage)
+        def refresh_access_token(appid, authorizer_appid, options) do
+          unquote(__MODULE__).Base.refresh_access_token(appid, authorizer_appid, options, @adapter_storage)
         end
 
         def get_component_access_token(appid) do
           unquote(__MODULE__).Base.get_component_access_token(appid, __MODULE__, @scenario, @adapter_storage)
         end
 
-        def set_component_access_token(response_body, options) do
-          unquote(__MODULE__).Base.set_component_access_token(response_body, options, @adapter_storage)
+        def set_component_access_token(appid, response_body, options) do
+          unquote(__MODULE__).Base.set_component_access_token(appid, response_body, options, @adapter_storage)
         end
 
-        def clean_component_access_token(options) do
-          unquote(__MODULE__).Base.clean_component_access_token(options, @adapter_storage)
+        def refresh_component_access_token(appid, options) do
+          unquote(__MODULE__).Base.refresh_component_access_token(appid, options, @adapter_storage)
         end
 
         def set_verify_ticket(appid, verify_ticket) do
@@ -99,8 +99,8 @@ defmodule WeChat.Component do
           unquote(__MODULE__).Base.get_component_access_token(appid, __MODULE__, @scenario, @adapter_storage)
         end
 
-        def clean_access_token(appid, authorizer_appid, options) do
-          unquote(__MODULE__).Base.clean_access_token(appid, authorizer_appid, options, @adapter_storage)
+        def refresh_access_token(appid, authorizer_appid, options) do
+          unquote(__MODULE__).Base.refresh_access_token(appid, authorizer_appid, options, @adapter_storage)
         end
       end
 
@@ -116,11 +116,11 @@ defmodule WeChat.Component do
         end
 
         def set_access_token(response_body, options) do
-          unquote(__MODULE__).Base.set_access_token(response_body, options, @adapter_storage)
+          unquote(__MODULE__).Base.set_access_token(@wechat_appid, response_body, options, @adapter_storage)
         end
 
-        def clean_access_token(authorizer_appid, options) do
-          unquote(__MODULE__).Base.clean_access_token(@wechat_appid, authorizer_appid, options, @adapter_storage)
+        def refresh_access_token(authorizer_appid, options) do
+          unquote(__MODULE__).Base.refresh_access_token(@wechat_appid, authorizer_appid, options, @adapter_storage)
         end
 
         def get_component_access_token() do
@@ -128,11 +128,11 @@ defmodule WeChat.Component do
         end
 
         def set_component_access_token(response_body, options) do
-          unquote(__MODULE__).Base.set_component_access_token(response_body, options, @adapter_storage)
+          unquote(__MODULE__).Base.set_component_access_token(@wechat_appid, response_body, options, @adapter_storage)
         end
 
-        def clean_component_access_token(options) do
-          unquote(__MODULE__).Base.clean_component_access_token(options, @adapter_storage)
+        def refresh_component_access_token(options) do
+          unquote(__MODULE__).Base.refresh_component_access_token(@wechat_appid, options, @adapter_storage)
         end
 
         def set_verify_ticket(verify_ticket) do
@@ -154,8 +154,8 @@ defmodule WeChat.Component do
           unquote(__MODULE__).Base.get_component_access_token(@wechat_appid, __MODULE__, @scenario, @adapter_storage)
         end
 
-        def clean_access_token(authorizer_appid, options) do
-          unquote(__MODULE__).Base.clean_access_token(@wechat_appid, authorizer_appid, options, @adapter_storage)
+        def refresh_access_token(authorizer_appid, options) do
+          unquote(__MODULE__).Base.refresh_access_token(@wechat_appid, authorizer_appid, options, @adapter_storage)
         end
 
       end
@@ -186,7 +186,7 @@ defmodule WeChat.Component.Base do
   @moduledoc false
   require Logger
 
-  alias WeChat.{Error, Http}
+  alias WeChat.Error
 
   def get_access_token(appid, authorizer_appid, module, scenario = :hub, adapter_storage) do
     token = adapter_storage.get_access_token(appid, authorizer_appid)
@@ -213,8 +213,7 @@ defmodule WeChat.Component.Base do
     token.access_token
   end
 
-  def set_access_token(response_body, options, adapter_storage) do
-    appid = Http.grep_appid(options)
+  def set_access_token(appid, response_body, _options, adapter_storage) do
     Logger.info("set authorizer_access_token for component appid: #{appid}, response_body: #{inspect response_body}")
 
     authorizer_access_token = Map.get(response_body, "access_token")
@@ -229,10 +228,10 @@ defmodule WeChat.Component.Base do
     )
   end
 
-  def clean_access_token(appid, authorizer_appid, options, adapter_storage) do
-    Logger.info("clean access_token for authorizer_appid: #{authorizer_appid} within component appid: #{appid}, options: #{inspect options}")
+  def refresh_access_token(appid, authorizer_appid, options, adapter_storage) do
+    Logger.info("refresh access_token for authorizer_appid: #{authorizer_appid} within component appid: #{appid}, options: #{inspect options}")
     access_token = Keyword.get(options, :access_token)
-    adapter_storage.delete_access_token(
+    adapter_storage.refresh_access_token(
       appid,
       authorizer_appid,
       access_token
@@ -256,18 +255,16 @@ defmodule WeChat.Component.Base do
     component_token.access_token
   end
 
-  def set_component_access_token(response_body, options, adapter_storage) do
-    appid = Http.grep_appid(options)
+  def set_component_access_token(appid, response_body, options, adapter_storage) do
     Logger.info("** set_component_access_token, response_body: #{inspect response_body}, options: #{inspect options}")
     component_access_token = Map.get(response_body, "component_access_token")
     adapter_storage.save_component_access_token(appid, component_access_token)
   end
 
-  def clean_component_access_token(options, adapter_storage) do
-    appid = Http.grep_appid(options)
-    Logger.info("clean component_access_token for appid: #{appid}, options: #{inspect options}, adapter_storage: #{inspect adapter_storage}")
+  def refresh_component_access_token(appid, options, adapter_storage) do
+    Logger.info("refresh component_access_token for appid: #{appid}, options: #{inspect options}, adapter_storage: #{inspect adapter_storage}")
     component_access_token = Keyword.get(options, :component_access_token)
-    adapter_storage.delete_component_access_token(appid, component_access_token)
+    adapter_storage.refresh_component_access_token(appid, component_access_token)
   end
 
   def set_verify_ticket(appid, verify_ticket, adapter_storage) do

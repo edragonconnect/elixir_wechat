@@ -22,8 +22,8 @@ defmodule WeChat.Adapter.Storage.Client do
         end
 
         @impl true
-        def delete_access_token(appid, access_token) do
-          # Delete access_token by appid from your persistence
+        def refresh_access_token(appid, access_token) do
+          # Refresh access_token by appid from your persistence
           :ok
         end
 
@@ -40,13 +40,14 @@ defmodule WeChat.Adapter.Storage.Client do
   @callback get_access_token(appid :: String.t()) :: %WeChat.Token{} | nil | %WeChat.Error{}
 
   @doc """
-  Delete access_token of WeChat common application.
+  Refresh access_token of WeChat common application via configured Hub servers
 
   ## Example
 
-      delete_access_token(appid, access_token)
+      refresh_access_token(appid, access_token)
   """
-  @callback delete_access_token(appid :: String.t(), access_token :: String.t()) :: term()
+  @callback refresh_access_token(appid :: String.t(), access_token :: String.t()) :: String.t()
+
 end
 
 defmodule WeChat.Adapter.Storage.ComponentClient do
@@ -76,7 +77,7 @@ defmodule WeChat.Adapter.Storage.ComponentClient do
         end
 
         @impl true
-        def delete_access_token(appid, authorizer_appid, access_token) do
+        def refresh_access_token(appid, authorizer_appid, access_token) do
           :ok
         end
       end
@@ -104,19 +105,19 @@ defmodule WeChat.Adapter.Storage.ComponentClient do
               %WeChat.Token{} | nil | %WeChat.Error{}
 
   @doc """
-  Delete authorizer's access_token for WeChat component application.
+  Refresh authorizer's access_token for WeChat component application.
 
   ## Example
 
-      delete_access_token(
+      refresh_access_token(
         appid,
         authorizer_appid,
         access_token
       )
   """
-  @callback delete_access_token(
+  @callback refresh_access_token(
               appid :: String.t(),
               authorizer_appid :: String.t(),
               access_token :: String.t()
-            ) :: term()
+            ) :: String.t()
 end

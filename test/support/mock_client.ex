@@ -19,8 +19,8 @@ defmodule MockHub.TestAdapter.Common do
   end
 
   @impl true
-  def delete_access_token(_appid, _access_token) do
-    :ok
+  def refresh_access_token(_appid, _access_token) do
+    "refreshed_access_token"
   end
 
 end
@@ -47,8 +47,8 @@ defmodule MockHub.TestAdapter.Component do
   end
 
   @impl true
-  def delete_access_token(_appid, _authorizer_appid, _access_token) do
-    :ok
+  def refresh_access_token(_appid, _authorizer_appid, _access_token) do
+    "refreshed_access_token"
   end
 
   @impl true
@@ -62,8 +62,8 @@ defmodule MockHub.TestAdapter.Component do
   end
 
   @impl true
-  def delete_component_access_token(_appid, _component_access_token) do
-    :ok
+  def refresh_component_access_token(_appid, _component_access_token) do
+    "refreshed_component_access_token"
   end
 
   @impl true
