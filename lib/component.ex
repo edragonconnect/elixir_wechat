@@ -336,8 +336,10 @@ defmodule WeChat.Component.Base do
       {:ok, response} ->
         Map.get(response.body, "authorizer_access_token")
       {:error, error} ->
-        Logger.error("remote_refresh_authorizer_access_token occurs error: #{inspect error}")
-        raise error
+        # errcode: 61023, invalid refresh_token
+        # try to refetch refresh_token, and then use it to refresh authorizer access_token
+        Logger.info("remote_refresh_authorizer_access_token occurs error: #{inspect error}, will try to refetch refresh_token and use it to refresh authorizer access_token")
+        nil
     end
   end
 
