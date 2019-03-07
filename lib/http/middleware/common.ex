@@ -155,7 +155,7 @@ defmodule WeChat.Http.Middleware.Common do
         authorizer_appid = Keyword.get(options, :authorizer_appid)
         wechat_module = Keyword.get(options, :module)
         if authorizer_appid != nil do
-          Logger.info "when invoke wechat common apis occurs expired or invalid access_token for wechat_appid: #{wechat_appid} and authorizer_appid: #{authorizer_appid}, will clean and refetch it."
+          Logger.info "when invoke wechat common apis occurs expired or invalid access_token for component_appid: #{wechat_appid} and authorizer_appid: #{authorizer_appid}, will clean and refetch it."
           apply(wechat_module, :clean_access_token, [authorizer_appid, Keyword.merge(options, request_query)])
         else
           Logger.info "when invoke wechat common apis occurs expired or invalid access_token for wechat_appid: #{wechat_appid}, will clean and refetch it."

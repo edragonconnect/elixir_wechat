@@ -384,7 +384,7 @@ defmodule WeChat.Http.Middleware.Component do
         {:error, %Error{reason: :invalid_component_verify_ticket, errcode: errcode, message: Map.get(response_result, "errmsg")}}
       errcode == 61023 ->
         wechat_appid = Http.grep_appid(options)
-        Logger.error "refresh_token of appid: #{wechat_appid} is invalid, will retry fetch, env: #{inspect env}"
+        Logger.info "refresh_token of appid: #{wechat_appid} is invalid, will retry fetch, env: #{inspect env}"
         {:error, %Error{reason: :invalid_component_refresh_token, errcode: errcode, message: Map.get(response_result, "errmsg")}}
       errcode == 61004 ->
         wechat_appid = Http.grep_appid(options)

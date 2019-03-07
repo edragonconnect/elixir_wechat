@@ -189,7 +189,6 @@ defmodule WeChat.Component.Base do
   alias WeChat.{Error, Http}
 
   def get_access_token(appid, authorizer_appid, module, scenario = :hub, adapter_storage) do
-    IO.puts ">>> adapter_storage: #{inspect adapter_storage}"
     token = adapter_storage.get_access_token(appid, authorizer_appid)
     Logger.info "scenario as #{scenario}, get_access_token appid: #{inspect appid}, authorizer_appid: #{inspect authorizer_appid}, get_access_token: #{inspect token}"
 
