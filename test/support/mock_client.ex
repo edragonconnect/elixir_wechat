@@ -106,6 +106,16 @@ defmodule MockComponentHub1 do
 
 end
 
+defmodule MockComponentHub2 do
+
+  use WeChat.Component,
+    scenario: :hub,
+    adapter_storage: MockHub.TestAdapter.Component
+
+  def get_adapter_storage(), do: MockHub.TestAdapter.Component
+
+end
+
 defmodule MockCommonHub1 do
   use WeChat,
     appid: "CommonHub1Appid",

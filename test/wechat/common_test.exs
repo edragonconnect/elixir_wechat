@@ -128,7 +128,52 @@ defmodule WeChat.CommonTest do
       {:error, error} ->
         IO.puts "client occurs error when upload media: #{inspect error}"
     end
+  end
 
+  test "mock refresh access token" do
+    with_mock Tesla, [:passthrough], [run: fn(env, _next) ->
+        if env.url == "https://api.weixin.qq.com/cgi-bin/material/get_materialcount" do
+          case Enum.random(0..10) do
+            0 ->
+              {:ok,
+                %{
+                  status: 200,
+                  headers: [],
+                  body: "{\"data\":[],\"errcode\":0}",
+                  query: [],
+                  url: env.url
+                }
+              }
+            _ ->
+              {
+                :ok,
+                %{
+                  status: 200,
+                  headers: [],
+                  body: "{\"errcode\":40001}",
+                  query: [],
+                  url: env.url
+                }
+              }
+          end
+        else
+          {
+            :ok,
+            %{
+              status: 200,
+              headers: [],
+              body: %{"access_token" => "invalid"}
+            }
+          }
+        end
+      end] do
+      appid = "wx02f6854d0cf042bb"
+      {:ok, response} = MockCommonClient2.material(:get, appid, :get_materialcount)
+      assert Map.get(response.body, "data") == []
+
+      {:ok, response2} = MockCommonClient1.material(:get, :get_materialcount)
+      assert Map.get(response2.body, "data") == []
+    end
   end
 
 end

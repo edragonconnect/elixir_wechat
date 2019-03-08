@@ -52,11 +52,17 @@ defmodule WeChat.MixProject do
           WeChat.Adapter.Storage.Hub,
           WeChat.Adapter.Storage.ComponentHub,
         ],
-        Guide: [
+        "Guide - Common": [
           DynamicAppIdClient,
-          DynamicComponentAppIdClient,
+          DynamicAppIdHubClient,
           GlobalAppIdClient,
+          GlobalAppIdHubClient,
+        ],
+        "Guide - Component": [
+          DynamicComponentAppIdClient,
+          DynamicComponentAppIdHubClient,
           GlobalComponentAppIdClient,
+          GlobalComponentAppIdHubClient
         ],
         Upload: [
           WeChat.UploadMedia,

@@ -56,8 +56,7 @@ defmodule WeChat.Http.Middleware.Component do
     credential = Http.grep_credential(options)
     updated_env = append_component_access_token(env, options)
 
-    updated_body =
-      populate_required_into_body(env.body, [], %{component_appid: credential.appid})
+    updated_body = populate_required_into_body(env.body, [], %{component_appid: credential.appid})
 
     Map.put(updated_env, :body, updated_body)
   end
@@ -163,10 +162,10 @@ defmodule WeChat.Http.Middleware.Component do
   end
 
   defp append_component_access_token(env, options) do
-    refreshed_component_access_token = Keyword.get(options, :refreshed_component_access_token)
+    fresh_component_access_token = Keyword.get(options, :fresh_component_access_token)
 
     required =
-      if refreshed_component_access_token == nil do
+      if fresh_component_access_token == nil do
         wechat_component_module = Keyword.get(options, :module)
         component_access_token =
           cond do
@@ -179,16 +178,14 @@ defmodule WeChat.Http.Middleware.Component do
         Logger.info ">>> auto append_component_access_token component_access_token: #{inspect component_access_token}"
         [component_access_token: component_access_token]
       else
-        Logger.info ">>> auto append_component_access_token using the latest refreshed component_access_token: #{inspect refreshed_component_access_token}"
-        [component_access_token: refreshed_component_access_token]
+        Logger.info ">>> auto append_component_access_token using the latest refreshed component_access_token: #{inspect fresh_component_access_token}"
+        [component_access_token: fresh_component_access_token]
       end
     Map.update!(env, :query, &(Keyword.merge(&1, required)))
   end
 
   defp decode_response({:ok, response}, init_env, next, options) do
-    Logger.info(">>> decode_response for component")
-    Logger.info("#{inspect response}")
-    Logger.info("#{inspect init_env}")
+    Logger.info(">>> decode_response for component: #{inspect response}")
 
     initial = %{
       status: response.status,
@@ -199,8 +196,7 @@ defmodule WeChat.Http.Middleware.Component do
     if response.body != "" do
       response_body = Jason.decode!(response.body)
       request_query = init_env.query
-      Logger.info ">>> response_body: #{inspect response_body}"
-      Logger.info ">>> request_query: #{inspect request_query}"
+      Logger.info ">>> response_body: #{inspect response_body}, request_query: #{inspect request_query}"
       case rerun_when_token_expire(init_env, next, options, response_body, request_query) do
         :ok ->
           request_body = init_env.body
@@ -384,8 +380,13 @@ defmodule WeChat.Http.Middleware.Component do
         wechat_appid = Http.grep_appid(options)
         wechat_module = Keyword.get(options, :module)
         Logger.info "when invoke wechat component apis occurs expired component_access_token for wechat_appid: #{wechat_appid}, will refresh to fetch a new component_access_token"
-        new_component_access_token = apply(wechat_module, :refresh_component_access_token, [wechat_appid, Keyword.merge(options, request_query)])
-        updated_options = Keyword.put(options, :refreshed_component_access_token, new_component_access_token)
+        new_component_access_token =
+          if function_exported?(wechat_module, :refresh_component_access_token, 2) == true do
+            apply(wechat_module, :refresh_component_access_token, [wechat_appid, Keyword.merge(options, request_query)])
+          else
+            apply(wechat_module, :refresh_component_access_token, [Keyword.merge(options, request_query)])
+          end
+        updated_options = Keyword.put(options, :fresh_component_access_token, new_component_access_token)
         execute(env, next, updated_options)
       errcode in [61005, 61006] ->
         wechat_appid = Http.grep_appid(options)

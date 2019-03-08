@@ -115,4 +115,100 @@ defmodule WeChat.ComponentTest do
     end
   end
 
+  test "mock refresh authorizer access token" do
+    with_mock Tesla, [:passthrough], [run: fn(env, _next) ->
+        if env.url == "https://api.weixin.qq.com/cgi-bin/material/get_materialcount" do
+          case Enum.random(0..10) do
+            0 ->
+              {:ok,
+                %{
+                  status: 200,
+                  headers: [],
+                  body: "{\"data\":[],\"errcode\":0}",
+                  query: [],
+                  url: env.url
+                }
+              }
+            _ ->
+              {
+                :ok,
+                %{
+                  status: 200,
+                  headers: [],
+                  body: "{\"errcode\":40001}",
+                  query: [],
+                  url: env.url
+                }
+              }
+          end
+        else
+          {
+            :ok,
+            %{
+              status: 200,
+              headers: [],
+              body: %{"access_token" => "invalid"}
+            }
+          }
+        end
+      end] do
+      appid = "wx1b447daaec0c7110"
+      authorizer_appid = "wx6973a7470c360256"
+      {:ok, response} = MockComponentClient1.material(:get, authorizer_appid, :get_materialcount)
+      assert Map.get(response.body, "data") == []
+
+      {:ok, response2} = MockComponentClient2.material(:get, appid, authorizer_appid, :get_materialcount)
+      assert Map.get(response2.body, "data") == []
+    end
+  end
+
+  test "mock refresh component access token" do
+    with_mock Tesla, [:passthrough], [run: fn(env, _next) ->
+        if env.url == "https://api.weixin.qq.com/cgi-bin/component/api_create_preauthcode" do
+          case Enum.random(0..10) do
+            0 ->
+              {:ok,
+                %{
+                  status: 200,
+                  headers: [],
+                  body: "{\"data\":[1,2,3],\"errcode\":0}",
+                  query: [],
+                  url: env.url
+                }
+              }
+            _ ->
+              {
+                :ok,
+                %{
+                  status: 200,
+                  headers: [],
+                  body: "{\"errcode\":40001}",
+                  query: [],
+                  url: env.url
+                }
+              }
+          end
+        else
+          {
+            :ok,
+            %{
+              status: 200,
+              headers: [],
+              body: %{"access_token" => "invalid"}
+            }
+          }
+        end
+      end] do
+      appid = "wx1b447daaec0c7110"
+      data = %{
+        "component_appid" => appid
+      }
+      {:ok, response} = MockComponentHub1.component(:post, :api_create_preauthcode, data)
+      assert Map.get(response.body, "data") == [1, 2, 3]
+
+      {:ok, response2} = MockComponentHub2.component(:post, appid, :api_create_preauthcode, data)
+      assert Map.get(response2.body, "data") == [1, 2, 3]
+    end
+  end
+
 end

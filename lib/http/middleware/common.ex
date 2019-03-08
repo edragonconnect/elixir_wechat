@@ -46,10 +46,10 @@ defmodule WeChat.Http.Middleware.Common do
   end
 
   defp populate_access_token(_uri, env, options) do
-    refreshed_access_token = Keyword.get(options, :refreshed_access_token)
+    fresh_access_token = Keyword.get(options, :fresh_access_token)
 
     required =
-      if refreshed_access_token == nil do
+      if fresh_access_token == nil do
         wechat_module = Keyword.get(options, :module)
 
         using_wechat_common_behaviour = Keyword.get(options, :wechat, []) |> Keyword.get(:using_wechat_common_behaviour, true)
@@ -76,8 +76,8 @@ defmodule WeChat.Http.Middleware.Common do
         Logger.info(">>> auto populate_access_token #{wechat_module} with access_token: #{access_token}")
         [access_token: access_token]
       else
-        Logger.info(">>> auto populate_access_token using the latest refreshed access_token: #{refreshed_access_token}")
-        [access_token: refreshed_access_token]
+        Logger.info(">>> auto populate_access_token using the latest refreshed access_token: #{fresh_access_token}")
+        [access_token: fresh_access_token]
       end
 
     Map.update!(env, :query, &(Keyword.merge(&1, required)))
@@ -117,13 +117,11 @@ defmodule WeChat.Http.Middleware.Common do
   end
 
   def decode_response({:ok, response}, init_env, next, options) do
-
     initial = %{
       status: response.status,
       headers: response.headers,
       body: ""
     }
-
     if response.body != "" do
       response_body = Jason.decode!(response.body)
       request_query = response.query
@@ -160,18 +158,32 @@ defmodule WeChat.Http.Middleware.Common do
     errcode = Map.get(response_result, "errcode")
     cond do
       errcode in [40001, 42001, 40014] ->
-        wechat_appid = Http.grep_appid(options)
-        authorizer_appid = Keyword.get(options, :authorizer_appid)
+        appid = Http.grep_appid(options)
         wechat_module = Keyword.get(options, :module)
+
+        using_wechat_common_behaviour = Keyword.get(options, :wechat, []) |> Keyword.get(:using_wechat_common_behaviour, true)
+
         new_access_token =
-          if authorizer_appid != nil do
-            Logger.info "when invoke wechat common apis occurs expired or invalid access_token for component_appid: #{wechat_appid} and authorizer_appid: #{authorizer_appid}, will refresh to fetch a new access_token."
-            apply(wechat_module, :refresh_access_token, [authorizer_appid, Keyword.merge(options, request_query)])
+          if using_wechat_common_behaviour == true do
+            Logger.info "refresh_access_token for common application, wechat_module: #{inspect wechat_module}, appid: #{inspect appid}"
+            cond do
+              function_exported?(wechat_module, :refresh_access_token, 2) ->
+                apply(wechat_module, :refresh_access_token, [appid, Keyword.merge(options, request_query)])
+              true ->
+                apply(wechat_module, :refresh_access_token, [Keyword.merge(options, request_query)])
+            end
           else
-            Logger.info "when invoke wechat common apis occurs expired or invalid access_token for wechat_appid: #{wechat_appid}, will refresh to fetch a new access_token."
-            apply(wechat_module, :refresh_access_token, [options])
+            authorizer_appid = Keyword.get(options, :authorizer_appid)
+            Logger.info "refresh_access_token for component application, wechat_module: #{inspect wechat_module}, appid: #{inspect appid}, authorizer_appid: #{inspect authorizer_appid}"
+            cond do
+              function_exported?(wechat_module, :refresh_access_token, 3) ->
+                apply(wechat_module, :refresh_access_token, [appid, authorizer_appid, Keyword.merge(options, request_query)])
+              true ->
+                apply(wechat_module, :refresh_access_token, [authorizer_appid, Keyword.merge(options, request_query)])
+            end
           end
-        updated_options = Keyword.put(options, :refreshed_access_token, new_access_token)
+
+        updated_options = Keyword.put(options, :fresh_access_token, new_access_token)
         execute(env, next, updated_options)
       errcode == 61024 ->
         Logger.error "invalid usecase to get access_token of authorizer_appid by wechat component"
