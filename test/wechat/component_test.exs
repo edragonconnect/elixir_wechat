@@ -88,6 +88,13 @@ defmodule WeChat.ComponentTest do
     end
   end
 
+  test "wechat api function - get media" do
+    authorizer_appid = "wx6973a7470c360256"
+    media_id = "dsg-_SKNmxSnxPYVlI9RIQsrUXyZ_lkgc5M2KoabL9NsM9JNhNi4TxrsYQs6ugu1"
+    {:ok, response} = MockComponentClient1.media(:get, authorizer_appid, :get, media_id: media_id)
+    assert is_binary(response.body) == true
+  end
+
   test "wechat api function - post batchget_material" do
     component_appid = "wx1b447daaec0c7110"
     authorizer_appid = "wx6973a7470c360256"

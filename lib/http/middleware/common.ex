@@ -122,8 +122,9 @@ defmodule WeChat.Http.Middleware.Common do
       headers: response.headers,
       body: ""
     }
-    if response.body != "" do
-      response_body = Jason.decode!(response.body)
+    response_body = response.body
+    if response_body != "" and response_body != nil do
+      response_body = decode_response_body(response_body)
       request_query = response.query
       case rerun_when_token_expire(init_env, next, options, response_body, request_query) do
         :ok ->
@@ -142,6 +143,15 @@ defmodule WeChat.Http.Middleware.Common do
     {:error, %Error{reason: reason}}
   end
 
+  defp decode_response_body(body) do
+    case Jason.decode(body) do
+      {:ok, result} ->
+        result
+      {:error, _} ->
+        body
+    end
+  end
+
   defp reserve_access_token(%URI{path: "/cgi-bin/token"}, response_body, options) do
     wechat_module = Keyword.get(options, :module)
     appid = Http.grep_appid(options)
@@ -152,7 +162,7 @@ defmodule WeChat.Http.Middleware.Common do
     :ok
   end
 
-  defp rerun_when_token_expire(env, next, options, response_result, request_query) do
+  defp rerun_when_token_expire(env, next, options, response_result, request_query) when is_map(response_result) do
     # errcode from WeChat 40001/42001: expired access_token
     # errcode from WeChat 40014: invalid access_token
     errcode = Map.get(response_result, "errcode")
@@ -191,6 +201,9 @@ defmodule WeChat.Http.Middleware.Common do
       true ->
         :ok
     end
+  end
+  defp rerun_when_token_expire(_env, _next, _options, _response_result, _request_query) do
+    :ok
   end
 
 end
