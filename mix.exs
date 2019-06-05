@@ -33,7 +33,7 @@ defmodule WeChat.MixProject do
       {:toml, "~> 0.3"},
       {:tesla, "~> 1.2"},
       {:jason, "~> 1.1"},
-      {:timex, "~> 3.4"},
+      {:timex, "~> 3.5"},
       {:mock, "~> 0.3", only: :test},
     ]
   end
