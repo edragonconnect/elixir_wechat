@@ -15,7 +15,7 @@ defmodule WeChat.Adapter.Storage.Hub do
         @behaviour WeChat.Adapter.Storage.Hub
 
         @impl true
-        def get_secret_keya(appid) do
+        def get_secret_key(appid) do
           secret_key = "Get secret_key by appid from your persistence..."
           secret_key
         end
