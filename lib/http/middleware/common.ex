@@ -155,7 +155,12 @@ defmodule WeChat.Http.Middleware.Common do
   defp reserve_access_token(%URI{path: "/cgi-bin/token"}, response_body, options) do
     wechat_module = Keyword.get(options, :module)
     appid = Http.grep_appid(options)
-    apply(wechat_module, :set_access_token, [appid, response_body, options])
+    cond do
+      function_exported?(wechat_module, :set_access_token, 3) ->
+        apply(wechat_module, :set_access_token, [appid, response_body, options])
+      true ->
+        apply(wechat_module, :set_access_token, [response_body, options])
+    end
   end
 
   defp reserve_access_token(_uri, _response_body, _options) do
