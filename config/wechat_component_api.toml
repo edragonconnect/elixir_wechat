@@ -2,3 +2,7 @@
 uri_prefix = "cgi-bin/component"
 http_verbs = ["post"]
 scenario.client.ignored.uri_supplement = ["api_component_token"]
+
+[oauth2_component]
+uri_prefix = "sns/oauth2/component"
+http_verbs = ["get"]

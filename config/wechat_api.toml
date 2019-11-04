@@ -59,3 +59,6 @@ use_for_component = false
 # https://api.weixin.qq.com/cgi-bin/shorturl, transfer long url into short url
 uri_prefix = "cgi-bin/shorturl"
 http_verbs = ["post"]
+
+[sns_userinfo]
+uri_prefix = "sns/userinfo"
