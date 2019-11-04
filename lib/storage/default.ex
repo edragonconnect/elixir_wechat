@@ -60,7 +60,6 @@ defmodule WeChat.Storage.Default.HubClient do
   use Tesla
 
   plug Tesla.Middleware.BaseUrl, Application.get_env(:elixir_wechat, :hub_base_url)
-  plug Tesla.Middleware.Timeout, timeout: 10_000
   plug Tesla.Middleware.Retry, delay: 500, max_retries: 10
   plug Tesla.Middleware.JSON
 
