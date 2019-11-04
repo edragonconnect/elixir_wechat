@@ -29,11 +29,11 @@ defmodule WeChat.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ex_doc, "~> 0.19", only: [:docs, :dev], runtime: false},
-      {:toml, "~> 0.3"},
-      {:tesla, "~> 1.2"},
+      {:ex_doc, "~> 0.21", only: [:docs, :dev], runtime: false},
+      {:toml, "~> 0.6"},
+      {:tesla, "~> 1.3"},
       {:jason, "~> 1.1"},
-      {:timex, "~> 3.5"},
+      {:timex, "~> 3.6"},
       {:mock, "~> 0.3", only: :test},
     ]
   end
