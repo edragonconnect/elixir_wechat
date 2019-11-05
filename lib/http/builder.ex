@@ -254,11 +254,46 @@ defmodule WeChat.Component.Builder do
     |> Http.post_request(url, body)
   end
 
+  def do_request(:get, uri_supplement, configs, module, opts) when is_atom(uri_supplement) do
+    url = APIGenerator.splice_url(uri_supplement, configs)
+
+    opts
+    |> Http.new_component(module)
+    |> Http.get_request(url)
+  end
+
+  def do_request(:get, query, configs, module, opts) do
+    url = APIGenerator.splice_url(configs)
+
+    opts
+    |> Http.new_component(module)
+    |> Http.get_request(url, query)
+  end
+
   def do_request(:post, uri_supplement, body, configs, module, opts)
       when is_atom(uri_supplement) do
     url = APIGenerator.splice_url(uri_supplement, configs)
+
     opts
     |> Http.new_component(module)
     |> Http.post_request(url, body)
   end
+
+  def do_request(:get, uri_supplement, query, configs, module, opts)
+      when is_atom(uri_supplement) do
+    url = APIGenerator.splice_url(uri_supplement, configs)
+
+    opts
+    |> Http.new_component(module)
+    |> Http.get_request(url, query)
+  end
+
+  def do_request(:get, configs, module, opts) do
+    url = APIGenerator.splice_url(configs)
+
+    opts
+    |> Http.new_component(module)
+    |> Http.get_request(url)
+  end
+
 end
