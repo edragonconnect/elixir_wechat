@@ -45,6 +45,12 @@ defmodule WeChat.Http.Middleware.Common do
     Map.update!(env, :query, &(Keyword.merge(&1, prepared_query)))
   end
 
+  defp populate_access_token(%URI{path: "/sns/userinfo"} = _uri, env, _options) do
+    # use oauth authorized access_token to fetch user information
+    # in this case, we don't need to populate the general access_token.
+    env
+  end
+
   defp populate_access_token(_uri, env, options) do
     fresh_access_token = Keyword.get(options, :fresh_access_token)
 
