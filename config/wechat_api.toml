@@ -62,3 +62,8 @@ http_verbs = ["post"]
 
 [sns_userinfo]
 uri_prefix = "sns/userinfo"
+
+[ticket]
+uri_prefix = "cgi-bin/ticket"
+http_verbs = ["get"]
+
