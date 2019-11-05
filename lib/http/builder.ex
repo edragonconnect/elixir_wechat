@@ -172,6 +172,60 @@ defmodule WeChat.Builder do
   def do_request_by_component(
         :get,
         authorizer_appid,
+        :getticket,
+        query,
+        configs,
+        module,
+        opts
+      )
+      when is_bitstring(authorizer_appid) do
+
+    adapter_storage = opts[:adapter_storage]
+
+    appid = opts[:appid]
+
+    ticket_type = Keyword.get(query, :type)
+
+    ticket = adapter_storage.get_ticket(appid, authorizer_appid, ticket_type)
+
+    Logger.info ">>> get ticket from #{inspect adapter_storage} as: #{inspect ticket}"
+
+    if ticket == nil do
+      Logger.info(
+        "get request for getticket, configs: #{inspect(configs)}, authorizer_appid: #{
+          inspect(authorizer_appid)
+        }"
+      )
+
+      url = APIGenerator.splice_url(:getticket, configs)
+
+      result =
+        opts
+        |> Http.new(module, authorizer_appid)
+        |> Http.get_request(url, query)
+
+      case result do
+        {:ok, response} ->
+          adapter_storage.save_ticket(appid, authorizer_appid, ticket_type, Map.get(response.body, "ticket"))
+        _ ->
+          :ignore
+      end
+
+      result
+    else
+      {
+        :ok,
+        %{
+          body: %{"errcode" => 0, "errmsg" => "ok", "ticket" => ticket},
+          headers: []
+        }
+      }
+    end
+  end
+
+  def do_request_by_component(
+        :get,
+        authorizer_appid,
         uri_supplement,
         query,
         configs,

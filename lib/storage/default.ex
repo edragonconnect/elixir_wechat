@@ -4,6 +4,7 @@ defmodule WeChat.Storage.Default do
   @behaviour WeChat.Adapter.Storage.Client
 
   alias WeChat.Storage.Default.HubClient
+  alias WeChat.Error
 
   @impl true
   def get_access_token(appid) do
@@ -17,6 +18,15 @@ defmodule WeChat.Storage.Default do
   def refresh_access_token(appid, access_token) do
     HubClient.refresh_access_token(appid, access_token)
   end
+
+  @impl true
+  def get_ticket(appid, type) when type == "jsapi" or type == "wx_card" do
+    HubClient.get_ticket(appid, type)
+  end
+  def get_ticket(appid, type) do
+    raise %Error{reason: :invalid_ticket_type, errcode: "http_status_400", message: "input invalid_ticket_type: #{inspect type} for appid: #{inspect appid}"}
+  end
+
 end
 
 defmodule WeChat.Storage.ComponentDefault do
@@ -25,6 +35,7 @@ defmodule WeChat.Storage.ComponentDefault do
   @behaviour WeChat.Adapter.Storage.ComponentClient
 
   alias WeChat.Storage.Default.HubClient
+  alias WeChat.Error
 
   @impl true
   def get_access_token(appid, authorizer_appid) do
@@ -49,6 +60,14 @@ defmodule WeChat.Storage.ComponentDefault do
         access_token
       ) do
     HubClient.refresh_access_token(appid, authorizer_appid, access_token)
+  end
+
+  @impl true
+  def get_ticket(appid, authorizer_appid, type) when type == "jsapi" or type == "wx_card" do
+    HubClient.get_ticket(appid, authorizer_appid, type)
+  end
+  def get_ticket(appid, authorizer_appid, type) do
+    raise %Error{reason: :invalid_ticket_type, errcode: "http_status_400", message: "input invalid_ticket_type: #{inspect type} for component_appid: #{inspect appid}, authorizer_appid: #{inspect authorizer_appid}"}
   end
 end
 
@@ -105,29 +124,62 @@ defmodule WeChat.Storage.Default.HubClient do
     |> fetch_access_token()
   end
 
+  def get_ticket(appid, type) do
+    "/client/ticket"
+    |> get(query: [appid: appid, type: type])
+    |> fetch_ticket()
+  end
+
+  def get_ticket(appid, authorizer_appid, type) do
+    "/client/ticket"
+    |> get(query: [appid: appid, authorizer_appid: authorizer_appid, type: type])
+    |> fetch_ticket()
+  end
+
   defp fetch_access_token(response) do
     case response do
       {:ok, env} ->
         status = env.status
+        body = env.body
         if status == 200 do
-          body = env.body
           access_token = Map.get(body, "access_token")
           if access_token == nil do
             Logger.error "occur an error: #{inspect body} while get access_token from hub"
-            raise %Error{
-              reason: Map.get(body, "reason"),
-              errcode: Map.get(body, "errcode"),
-              message: Map.get(body, "message")
-            }
+            raise response_error(body)
           else
             access_token
           end
         else
-          raise %Error{reason: :fail_fetch_access_token_from_hub, errcode: "http_status_#{status}", message: env.body}
+          raise %Error{reason: :fail_fetch_access_token_from_hub, errcode: "http_status_#{status}", message: body}
         end
       {:error, error} ->
         raise %Error{reason: :error_fetch_access_token_from_hub, message: error}
     end
+  end
+
+  defp fetch_ticket(response) do
+    case response do
+      {:ok, env} ->
+        status = env.status
+        body = env.body
+        if status == 200 do
+          ticket = Map.get(body, "ticket")
+          if ticket == nil do
+            Logger.error "occur an error: #{inspect body} while get ticket from hub"
+            raise response_error(body)
+          else
+            ticket
+          end
+        else
+          raise %Error{reason: :fail_fetch_ticket_from_hub, errcode: "http_status_#{status}", message: body}
+        end
+      {:error, error} ->
+        raise %Error{reason: :error_fetch_ticket_from_hub, message: error}
+    end
+  end
+
+  defp response_error(body) do
+    %Error{reason: Map.get(body, "reason"), errcode: Map.get(body, "errcode"), message: Map.get(body, "message")}
   end
 
 end

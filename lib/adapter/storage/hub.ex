@@ -70,6 +70,27 @@ defmodule WeChat.Adapter.Storage.Hub do
       refresh_access_token(appid, access_token)
   """
   @callback refresh_access_token(appid :: String.t(), access_token :: String.t()) :: String.t()
+
+  @doc """
+  Save ticket of WeChat common application.
+
+  ## Example
+   
+      save_ticket(appid, ticket, "wx_card")
+      save_ticket(appid, ticket, "jsapi")
+  """
+  @callback save_ticket(appid :: String.t(), ticket :: String.t(), type :: String.t()) :: term()
+
+  @doc """
+  Get ticket of WeChat common application.
+
+  ## Example
+
+      get_ticket(appid, "wx_card")
+      get_ticket(appid, "jsapi")
+  """
+  @callback get_ticket(appid :: String.t(), type :: String.t()) :: String.t() | nil | %WeChat.Error{}
+
 end
 
 defmodule WeChat.Adapter.Storage.ComponentHub do
@@ -245,4 +266,25 @@ defmodule WeChat.Adapter.Storage.ComponentHub do
               appid :: String.t(),
               component_verify_ticket :: String.t()
             ) :: term()
+
+  @doc """
+  Save authorizer account's ticket in WeChat component application.
+
+  ## Example
+  
+      save_ticket(appid, authorizer_appid, ticket, "wx_card")
+      save_ticket(appid, authorizer_appid, ticket, "jsapi")
+  """
+  @callback save_ticket(appid :: String.t(), authorizer_appid :: String.t(), ticket :: String.t(), type :: String.t()) :: term()
+
+  @doc """
+  Get authorizer account's ticket in WeChat component application.
+
+  ## Example
+  
+      get_ticket(appid, authorizer_appid, "wx_card")
+      get_ticket(appid, authorizer_appid, "jsapi")
+  """
+  @callback get_ticket(appid :: String.t(), authorizer_appid :: String.t(), type :: String.t()) :: String.t() | nil | %WeChat.Error{}
+
 end

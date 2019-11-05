@@ -48,6 +48,16 @@ defmodule WeChat.Adapter.Storage.Client do
   """
   @callback refresh_access_token(appid :: String.t(), access_token :: String.t()) :: String.t()
 
+  @doc """
+  Get ticket of WeChat common application.
+
+  ## Example
+  
+      get_ticket(appid, "wx_card")
+      get_ticket(appid, "jsapi")
+  """
+  @callback get_ticket(appid :: String.t(), type :: String.t()) :: String.t() | nil | %WeChat.Error{}
+
 end
 
 defmodule WeChat.Adapter.Storage.ComponentClient do
@@ -82,8 +92,9 @@ defmodule WeChat.Adapter.Storage.ComponentClient do
         end
       end
   """
+
   @doc """
-  Get authorizer's access_token for WeChat component application.
+  Get authorizer's access_token in WeChat component application.
 
   ## Example
 
@@ -105,7 +116,7 @@ defmodule WeChat.Adapter.Storage.ComponentClient do
               %WeChat.Token{} | nil | %WeChat.Error{}
 
   @doc """
-  Refresh authorizer's access_token for WeChat component application.
+  Refresh authorizer's access_token in WeChat component application.
 
   ## Example
 
@@ -120,4 +131,15 @@ defmodule WeChat.Adapter.Storage.ComponentClient do
               authorizer_appid :: String.t(),
               access_token :: String.t()
             ) :: String.t()
+
+  @doc """
+  Get authorizer's ticket in WeChat component application.
+
+  ## Example
+
+      get_ticket(appid, authorizer_appid, "wx_card")
+      get_ticket(appid, authorizer_appid, "jsapi")
+  """
+  @callback get_ticket(appid :: String.t(), authorizer_appid :: String.t(), type :: String.t()) :: String.t() | nil | %WeChat.Error{}
+
 end
