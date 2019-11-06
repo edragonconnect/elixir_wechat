@@ -2,8 +2,7 @@ defmodule WeChat do
   @moduledoc false
   require Logger
 
-  alias WeChat.Builder
-  alias WeChat.APIGenerator
+  alias WeChat.{Builder, APIGenerator, Utils}
 
   @external_resource Path.join(Path.dirname(__DIR__), "config/wechat_api.toml")
 
@@ -83,12 +82,27 @@ defmodule WeChat do
     defstruct [:access_token, :refresh_token]
   end
 
+  defmodule JSSDKSignature do
+    @type t :: %__MODULE__{
+            value: String.t(),
+            timestamp: integer(),
+            noncestr: String.t(),
+          }
+    defstruct [:value, :timestamp, :noncestr]
+  end
+
   def ensure_implements(module, behaviour, message) do
     all = Keyword.take(module.__info__(:attributes), [:behaviour])
     unless [behaviour] in Keyword.values(all) do
       raise %Error{reason: :invalid_impl, message: "Expected #{inspect module} to implement #{inspect behaviour} " <> "in order to #{message}"}
     end
   end
+
+  @doc """
+  To configure and load WeChat JSSDK in the target page's url properly, use `jsapi_ticket` and `url` to generate an signature for this scenario.
+  """
+  @spec sign_jssdk(jsapi_ticket :: String.t(), url :: String.t()) :: JSSDKSignature.t()
+  defdelegate sign_jssdk(jsapi_ticket, url), to: Utils
 
   defmacro __using__(opts \\ []) do
     opts =
@@ -144,6 +158,7 @@ defmodule WeChat do
       else
         unquote(generate_base_require_appid(opts))
       end
+
     end
   end
 
