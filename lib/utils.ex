@@ -3,7 +3,7 @@ defmodule WeChat.Utils do
 
   @random_alphanumeric Enum.concat([?a..?z, ?A..?Z, 48..57])
 
-  alias WeChat.JSSDKSignature
+  alias WeChat.{JSSDKSignature, CardSignature}
 
   def random_string(length) when length > 0 do
     @random_alphanumeric
@@ -26,6 +26,19 @@ defmodule WeChat.Utils do
     str_to_sign = "jsapi_ticket=#{jsapi_ticket}&noncestr=#{noncestr}&timestamp=#{timestamp}&url=#{url}"
     signature = :crypto.hash(:sha, str_to_sign) |> Base.encode16(case: :lower)
     %JSSDKSignature{value: signature, timestamp: timestamp, noncestr: noncestr}
+  end
+
+  @doc """
+  To initialize WeChat Card functions via JSSDK, use `wxcard_ticket`, `card_id` to generate an signature for this scenario.
+  """
+  @spec sign_card(wxcard_ticket :: String.t(), card_id :: String.t()) :: CardSignature.t()
+  def sign_card(wxcard_ticket, card_id) do
+    noncestr = random_string(16)
+    timestamp = now_unix()
+    timestamp_str = Integer.to_string(timestamp)
+    str_to_sign = Enum.sort([wxcard_ticket, timestamp_str, card_id, noncestr]) |> Enum.join("")
+    signature = :crypto.hash(:sha, str_to_sign) |> Base.encode16(case: :lower)
+    %CardSignature{value: signature, timestamp: timestamp, noncestr: noncestr}
   end
 
 end

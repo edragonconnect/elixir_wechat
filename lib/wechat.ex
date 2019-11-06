@@ -91,6 +91,15 @@ defmodule WeChat do
     defstruct [:value, :timestamp, :noncestr]
   end
 
+  defmodule CardSignature do
+    @type t :: %__MODULE__{
+            value: String.t(),
+            timestamp: integer(),
+            noncestr: String.t()
+          }
+    defstruct [:value, :timestamp, :noncestr]
+  end
+
   def ensure_implements(module, behaviour, message) do
     all = Keyword.take(module.__info__(:attributes), [:behaviour])
     unless [behaviour] in Keyword.values(all) do
@@ -99,10 +108,16 @@ defmodule WeChat do
   end
 
   @doc """
-  To configure and load WeChat JSSDK in the target page's url properly, use `jsapi_ticket` and `url` to generate an signature for this scenario.
+  To configure and load WeChat JSSDK in the target page's url properly, use `jsapi_ticket` and `url` to generate a signature for this scenario.
   """
   @spec sign_jssdk(jsapi_ticket :: String.t(), url :: String.t()) :: JSSDKSignature.t()
   defdelegate sign_jssdk(jsapi_ticket, url), to: Utils
+
+  @doc """
+  To initialize WeChat Card functions in JSSDK, use `wxcard_ticket` and `card_id` to generate a signature for this scenario.
+  """
+  @spec sign_card(wxcard_ticket :: String.t(), card_id :: String.t()) :: CardSignature.t()
+  defdelegate sign_card(wxcard_ticket, card_id), to: Utils
 
   defmacro __using__(opts \\ []) do
     opts =
