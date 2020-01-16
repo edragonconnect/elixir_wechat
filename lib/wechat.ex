@@ -115,9 +115,14 @@ defmodule WeChat do
 
   @doc """
   To initialize WeChat Card functions in JSSDK, use `wxcard_ticket` and `card_id` to generate a signature for this scenario.
+  https://developers.weixin.qq.com/doc/offiaccount/OA_Web_Apps/JS-SDK.html#65
   """
+  @spec sign_card(list :: [String.t()]) :: CardSignature.t()
   @spec sign_card(wxcard_ticket :: String.t(), card_id :: String.t()) :: CardSignature.t()
+  @spec sign_card(wxcard_ticket :: String.t(), card_id :: String.t(), openid :: String.t()) :: CardSignature.t()
   defdelegate sign_card(wxcard_ticket, card_id), to: Utils
+  defdelegate sign_card(wxcard_ticket, card_id, openid), to: Utils
+  defdelegate sign_card(list), to: Utils
 
   defmacro __using__(opts \\ []) do
     opts =

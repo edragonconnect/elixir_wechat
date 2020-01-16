@@ -30,13 +30,18 @@ defmodule WeChat.Utils do
 
   @doc """
   To initialize WeChat Card functions via JSSDK, use `wxcard_ticket`, `card_id` to generate an signature for this scenario.
+  https://developers.weixin.qq.com/doc/offiaccount/OA_Web_Apps/JS-SDK.html#65
   """
+  @spec sign_card(list :: [String.t()]) :: CardSignature.t()
   @spec sign_card(wxcard_ticket :: String.t(), card_id :: String.t()) :: CardSignature.t()
-  def sign_card(wxcard_ticket, card_id) do
+  @spec sign_card(wxcard_ticket :: String.t(), card_id :: String.t(), openid :: String.t()) :: CardSignature.t()
+  def sign_card(wxcard_ticket, card_id), do: sign_card([wxcard_ticket, card_id])
+  def sign_card(wxcard_ticket, card_id, openid), do: sign_card([wxcard_ticket, card_id, openid])
+  def sign_card(list) do
     noncestr = random_string(16)
     timestamp = now_unix()
     timestamp_str = Integer.to_string(timestamp)
-    str_to_sign = Enum.sort([wxcard_ticket, timestamp_str, card_id, noncestr]) |> Enum.join("")
+    str_to_sign = Enum.sort([timestamp_str, noncestr | list]) |> Enum.join()
     signature = :crypto.hash(:sha, str_to_sign) |> Base.encode16(case: :lower)
     %CardSignature{value: signature, timestamp: timestamp, noncestr: noncestr}
   end
