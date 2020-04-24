@@ -1,5 +1,4 @@
 defmodule WeChat.Http do
-
   @moduledoc false
   use Tesla
 
@@ -20,5 +19,4 @@ defmodule WeChat.Http do
       {WeChat.Http.Middleware.Component, request}
     ])
   end
-
 end

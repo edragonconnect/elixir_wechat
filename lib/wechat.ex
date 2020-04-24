@@ -1,5 +1,4 @@
 defmodule WeChat do
-
   alias WeChat.Http
   alias WeChat.{Utils, Request}
 
@@ -16,12 +15,12 @@ defmodule WeChat do
 
       @opts unquote(opts)
 
-      @spec request(method :: WeChat.method(), options :: Keyword.t()) :: {:ok, term()} | {:error, WeChat.Error.t()}
+      @spec request(method :: WeChat.method(), options :: Keyword.t()) ::
+              {:ok, term()} | {:error, WeChat.Error.t()}
       def request(method, options) do
         options = WeChat.Utils.merge_keyword(options, @opts)
         WeChat.request(method, options)
       end
-
     end
   end
 
@@ -30,18 +29,24 @@ defmodule WeChat do
 
     @derive {Jason.Encoder, only: [:errcode, :message, :reason, :http_status]}
     defexception errcode: nil, message: nil, reason: nil, http_status: nil
-  
-    def message(%__MODULE__{errcode: errcode, message: message, reason: reason, http_status: http_status}) do
-      "errcode: #{inspect(errcode)}, message: #{inspect(message)}, reason: #{inspect(reason)}, http_status: #{inspect(http_status)}"
+
+    def message(%__MODULE__{
+          errcode: errcode,
+          message: message,
+          reason: reason,
+          http_status: http_status
+        }) do
+      "errcode: #{inspect(errcode)}, message: #{inspect(message)}, reason: #{inspect(reason)}, http_status: #{
+        inspect(http_status)
+      }"
     end
   end
 
-
   defmodule Request do
     @moduledoc false
-  
+
     @type body :: {:form, map()} | map()
-  
+
     @type t :: %__MODULE__{
             method: atom(),
             uri: URI.t(),
@@ -55,8 +60,20 @@ defmodule WeChat do
             access_token: String.t(),
             base: module()
           }
-  
-    defstruct [:method, :uri, :appid, :authorizer_appid, :adapter_storage, :body, :use_case, :query, :opts, :access_token, :base]
+
+    defstruct [
+      :method,
+      :uri,
+      :appid,
+      :authorizer_appid,
+      :adapter_storage,
+      :body,
+      :use_case,
+      :query,
+      :opts,
+      :access_token,
+      :base
+    ]
   end
 
   defmodule Token do
@@ -82,7 +99,7 @@ defmodule WeChat do
     @enforce_keys [:file_path, :type]
     defstruct [:file_path, :type]
   end
-  
+
   defmodule UploadMediaContent do
     @moduledoc """
     TODO
@@ -104,7 +121,7 @@ defmodule WeChat do
     @type t :: %__MODULE__{
             value: String.t(),
             timestamp: integer(),
-            noncestr: String.t(),
+            noncestr: String.t()
           }
     defstruct [:value, :timestamp, :noncestr]
   end
@@ -130,7 +147,8 @@ defmodule WeChat do
   """
   @spec sign_card(list :: [String.t()]) :: CardSignature.t()
   @spec sign_card(wxcard_ticket :: String.t(), card_id :: String.t()) :: CardSignature.t()
-  @spec sign_card(wxcard_ticket :: String.t(), card_id :: String.t(), openid :: String.t()) :: CardSignature.t()
+  @spec sign_card(wxcard_ticket :: String.t(), card_id :: String.t(), openid :: String.t()) ::
+          CardSignature.t()
   defdelegate sign_card(wxcard_ticket, card_id), to: Utils
   defdelegate sign_card(wxcard_ticket, card_id, openid), to: Utils
   defdelegate sign_card(list), to: Utils
@@ -148,7 +166,8 @@ defmodule WeChat do
   - `:opts`
 
   """
-  @spec request(method :: method(), options :: Keyword.t()) :: {:ok, term()} | {:error, WeChat.Error.t()}
+  @spec request(method :: method(), options :: Keyword.t()) ::
+          {:ok, term()} | {:error, WeChat.Error.t()}
   def request(method, options) do
     method
     |> prepare_request(options)
@@ -179,12 +198,15 @@ defmodule WeChat do
   defp setup_httpclient(%Request{uri: %URI{path: path}}) when path == "" or path == nil do
     raise %WeChat.Error{reason: :invalid_request, message: "Input invalid url"}
   end
+
   defp setup_httpclient(%Request{uri: %URI{path: "/cgi-bin/component" <> _}} = request) do
     {Http.component_client(request), request}
   end
+
   defp setup_httpclient(%Request{uri: %URI{path: "cgi-bin/component" <> _}} = request) do
     {Http.component_client(request), request}
   end
+
   defp setup_httpclient(request) do
     {Http.client(request), request}
   end
@@ -197,35 +219,43 @@ defmodule WeChat do
       body: request.body,
       opts: request.opts
     ]
+
     Http.request(client, options)
   end
 
   @doc false
   def ensure_implements(module, behaviour) do
     all = Keyword.take(module.__info__(:attributes), [:behaviour])
+
     unless [behaviour] in Keyword.values(all) do
-      raise %WeChat.Error{reason: :invalid_impl, message: "Require #{inspect module} to implement adapter storage #{inspect behaviour} behaviour."}
+      raise %WeChat.Error{
+        reason: :invalid_impl,
+        message:
+          "Require #{inspect(module)} to implement adapter storage #{inspect(behaviour)} behaviour."
+      }
     end
   end
 
   defp initialize_opts(opts) do
     use_case = Keyword.get(opts, :use_case, :client)
 
-    Keyword.merge(opts, [
+    Keyword.merge(opts,
       adapter_storage: map_adapter_storage(use_case, opts[:adapter_storage]),
       use_case: use_case,
       appid: opts[:appid],
       authorizer_appid: opts[:authorizer_appid]
-    ])
+    )
   end
 
   defp map_adapter_storage(:client, nil) do
     WeChat.Storage.Adapter.DefaultClient
   end
+
   defp map_adapter_storage(:client, adapter_storage) do
     ensure_implements(adapter_storage, WeChat.Storage.Client)
     adapter_storage
   end
+
   defp map_adapter_storage(:hub, adapter_storage) do
     ensure_implements(adapter_storage, WeChat.Storage.Hub)
     adapter_storage
@@ -236,19 +266,22 @@ defmodule WeChat do
   defp prepare_base_opt(:hub, _), do: WeChat.Base.Hub
   defp prepare_base_opt(_, _), do: WeChat.Base.Local
 
-  defp prepare_method_opt(method) 
-    when method == :head
-    when method == :get
-    when method == :delete
-    when method == :trace
-    when method == :options
-    when method == :post
-    when method == :put
-    when method == :patch do
-      method
-  end
-  defp prepare_method_opt(method) do
-    raise %WeChat.Error{reason: :invalid_request, message: "Input invalid method: #{inspect method}"}
+  defp prepare_method_opt(method)
+       when method == :head
+       when method == :get
+       when method == :delete
+       when method == :trace
+       when method == :options
+       when method == :post
+       when method == :put
+       when method == :patch do
+    method
   end
 
+  defp prepare_method_opt(method) do
+    raise %WeChat.Error{
+      reason: :invalid_request,
+      message: "Input invalid method: #{inspect(method)}"
+    }
+  end
 end

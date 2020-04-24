@@ -7,11 +7,11 @@ defmodule WeChat.MixProject do
       version: "0.1.4",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
-      elixirc_paths: elixirc_paths(Mix.env),
+      elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
       docs: docs(),
       description: description(),
-      package: package(),
+      package: package()
     ]
   end
 
@@ -32,7 +32,7 @@ defmodule WeChat.MixProject do
       {:jason, "~> 1.1"},
       {:timex, "~> 3.6"},
       {:mock, "~> 0.3", only: :test},
-      {:ex_doc, "~> 0.21", only: [:docs, :dev], runtime: false},
+      {:ex_doc, "~> 0.21", only: [:docs, :dev], runtime: false}
     ]
   end
 
@@ -48,13 +48,13 @@ defmodule WeChat.MixProject do
           WeChat.Adapter.Storage.Client,
           WeChat.Adapter.Storage.ComponentClient,
           WeChat.Adapter.Storage.Hub,
-          WeChat.Adapter.Storage.ComponentHub,
+          WeChat.Adapter.Storage.ComponentHub
         ],
         "Guide - Common": [
           DynamicAppIdClient,
           DynamicAppIdHubClient,
           GlobalAppIdClient,
-          GlobalAppIdHubClient,
+          GlobalAppIdHubClient
         ],
         "Guide - Component": [
           DynamicComponentAppIdClient,

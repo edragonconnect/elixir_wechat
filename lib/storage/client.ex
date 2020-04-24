@@ -52,12 +52,12 @@ defmodule WeChat.Storage.Client do
   Get ticket of WeChat common application.
 
   ## Example
-  
+
       ticket_from_hub(appid, "wx_card")
       ticket_from_hub(appid, "jsapi")
   """
-  @callback fetch_ticket(appid :: String.t(), type :: String.t()) :: String.t() | nil | %WeChat.Error{}
-
+  @callback fetch_ticket(appid :: String.t(), type :: String.t()) ::
+              String.t() | nil | %WeChat.Error{}
 end
 
 defmodule WeChat.Storage.ComponentClient do
@@ -140,6 +140,6 @@ defmodule WeChat.Storage.ComponentClient do
       fetch_ticket(appid, authorizer_appid, "wx_card")
       fetch_ticket(appid, authorizer_appid, "jsapi")
   """
-  @callback fetch_ticket(appid :: String.t(), authorizer_appid :: String.t(), type :: String.t()) :: String.t() | nil | %WeChat.Error{}
-
+  @callback fetch_ticket(appid :: String.t(), authorizer_appid :: String.t(), type :: String.t()) ::
+              String.t() | nil | %WeChat.Error{}
 end

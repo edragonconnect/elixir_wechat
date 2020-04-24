@@ -89,8 +89,8 @@ defmodule WeChat.Storage.Hub do
       fetch_ticket(appid, "wx_card")
       fetch_ticket(appid, "jsapi")
   """
-  @callback fetch_ticket(appid :: String.t(), type :: String.t()) :: String.t() | nil | %WeChat.Error{}
-
+  @callback fetch_ticket(appid :: String.t(), type :: String.t()) ::
+              String.t() | nil | %WeChat.Error{}
 end
 
 defmodule WeChat.Storage.ComponentHub do
@@ -99,7 +99,7 @@ defmodule WeChat.Storage.ComponentHub do
 
   Since we need to storage(cache) some key data(e.g. `access_token`/`component_access_token`) for invoking WeChat APIs, this module
   is used for customizing the persistence when use this library in a `:hub` side of WeChat component application.
-  
+
   Notice: In the `:hub` scenario, we need to implement the completed functions to maintain the persistence.
 
   ## Writing custom storage adapter
@@ -232,7 +232,8 @@ defmodule WeChat.Storage.ComponentHub do
       )
   """
   @callback save_component_access_token(
-              appid :: String.t(), component_access_token :: String.t()
+              appid :: String.t(),
+              component_access_token :: String.t()
             ) :: term()
 
   @doc """
@@ -253,7 +254,8 @@ defmodule WeChat.Storage.ComponentHub do
   @doc """
   Get component_verify_ticket of WeChat component application.
   """
-  @callback fetch_component_verify_ticket(appid :: String.t()) :: String.t() | nil | %WeChat.Error{}
+  @callback fetch_component_verify_ticket(appid :: String.t()) ::
+              String.t() | nil | %WeChat.Error{}
 
   @doc """
   Save component_verify_ticket of WeChat component application.
@@ -271,20 +273,25 @@ defmodule WeChat.Storage.ComponentHub do
   Save authorizer account's ticket in WeChat component application.
 
   ## Example
-  
+
       save_ticket(appid, authorizer_appid, ticket, "wx_card")
       save_ticket(appid, authorizer_appid, ticket, "jsapi")
   """
-  @callback save_ticket(appid :: String.t(), authorizer_appid :: String.t(), ticket :: String.t(), type :: String.t()) :: term()
+  @callback save_ticket(
+              appid :: String.t(),
+              authorizer_appid :: String.t(),
+              ticket :: String.t(),
+              type :: String.t()
+            ) :: term()
 
   @doc """
   Get authorizer account's ticket in WeChat component application.
 
   ## Example
-  
+
       fetch_ticket(appid, authorizer_appid, "wx_card")
       fetch_ticket(appid, authorizer_appid, "jsapi")
   """
-  @callback fetch_ticket(appid :: String.t(), authorizer_appid :: String.t(), type :: String.t()) :: String.t() | nil | %WeChat.Error{}
-
+  @callback fetch_ticket(appid :: String.t(), authorizer_appid :: String.t(), type :: String.t()) ::
+              String.t() | nil | %WeChat.Error{}
 end

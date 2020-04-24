@@ -21,7 +21,6 @@ defmodule WeChat.Storage.Adapter.DefaultClient do
     # currently only support `type` as "jsapi" | "wx_card"
     Connector.fetch_ticket(appid, type)
   end
-
 end
 
 defmodule WeChat.Storage.Adapter.DefaultComponentClient do
@@ -63,31 +62,51 @@ defmodule WeChat.Storage.DefaultHubConnector do
 
   use Tesla
 
-  plug Tesla.Middleware.BaseUrl, Application.get_env(:elixir_wechat, :hub_base_url)
-  plug Tesla.Middleware.Retry, delay: 500, max_retries: 10
-  plug Tesla.Middleware.JSON
+  plug(Tesla.Middleware.BaseUrl, Application.get_env(:elixir_wechat, :hub_base_url))
+  plug(Tesla.Middleware.Retry, delay: 500, max_retries: 10)
+  plug(Tesla.Middleware.JSON)
 
   require Logger
 
   alias WeChat.Error
 
   def refresh_access_token(appid, access_token) do
-    Logger.info("send refresh_token request to wechat hub for appid: #{inspect appid}, access_token: #{inspect access_token}")
+    Logger.info(
+      "send refresh_token request to wechat hub for appid: #{inspect(appid)}, access_token: #{
+        inspect(access_token)
+      }"
+    )
+
     token =
       "/refresh/access_token"
       |> post(%{appid: appid, access_token: access_token})
       |> response_to_access_token()
-    Logger.info("received refreshed token from wechat hub: #{inspect token} for appid: #{inspect appid}")
+
+    Logger.info(
+      "received refreshed token from wechat hub: #{inspect(token)} for appid: #{inspect(appid)}"
+    )
+
     token
   end
 
   def refresh_access_token(appid, authorizer_appid, access_token) do
-    Logger.info("send refresh_token request to wechat hub for appid: #{inspect appid} with authorizer_appid: #{inspect authorizer_appid}, access_token: #{inspect access_token}")
+    Logger.info(
+      "send refresh_token request to wechat hub for appid: #{inspect(appid)} with authorizer_appid: #{
+        inspect(authorizer_appid)
+      }, access_token: #{inspect(access_token)}"
+    )
+
     token =
       "/refresh/access_token"
       |> post(%{appid: appid, authorizer_appid: authorizer_appid, access_token: access_token})
       |> response_to_access_token()
-    Logger.info("received access token from wechat hub: #{inspect token} for appid: #{inspect appid} with authorizer_appid: #{inspect authorizer_appid}")
+
+    Logger.info(
+      "received access token from wechat hub: #{inspect(token)} for appid: #{inspect(appid)} with authorizer_appid: #{
+        inspect(authorizer_appid)
+      }"
+    )
+
     token
   end
 
@@ -121,8 +140,10 @@ defmodule WeChat.Storage.DefaultHubConnector do
     |> response_to_ticket()
   end
 
-  defp response_to_access_token({:ok, %{status: 200, body: %{"access_token" => access_token} = body}})
-    when access_token != nil and access_token != "" do
+  defp response_to_access_token(
+         {:ok, %{status: 200, body: %{"access_token" => access_token} = body}}
+       )
+       when access_token != nil and access_token != "" do
     {
       :ok,
       %WeChat.Token{
@@ -131,22 +152,26 @@ defmodule WeChat.Storage.DefaultHubConnector do
       }
     }
   end
+
   defp response_to_access_token({:ok, %{status: status, body: body}}) do
-    {:error, %Error{reason: :fail_fetch_access_token, errcode: -1, http_status: status, message: body}}
+    {:error,
+     %Error{reason: :fail_fetch_access_token, errcode: -1, http_status: status, message: body}}
   end
+
   defp response_to_access_token({:error, error}) do
     {:error, %Error{reason: :fail_fetch_access_token, errcode: -1, message: error}}
   end
 
-  defp response_to_ticket({:ok, %{status: 200, body: %{"ticket" => ticket}}}) 
-    when ticket != nil and ticket != "" do
+  defp response_to_ticket({:ok, %{status: 200, body: %{"ticket" => ticket}}})
+       when ticket != nil and ticket != "" do
     {:ok, ticket}
   end
+
   defp response_to_ticket({:ok, %{status: status, body: body}}) do
     {:error, %Error{reason: :fail_fetch_ticket, errcode: -1, http_status: status, message: body}}
   end
+
   defp response_to_ticket({:error, error}) do
     {:error, %Error{reason: :fail_fetch_ticket, errcode: -1, message: error}}
   end
-
 end

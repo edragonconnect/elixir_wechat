@@ -23,7 +23,10 @@ defmodule WeChat.Utils do
     url = String.replace(url, ~r/\#.*/, "")
     noncestr = random_string(16)
     timestamp = now_unix()
-    str_to_sign = "jsapi_ticket=#{jsapi_ticket}&noncestr=#{noncestr}&timestamp=#{timestamp}&url=#{url}"
+
+    str_to_sign =
+      "jsapi_ticket=#{jsapi_ticket}&noncestr=#{noncestr}&timestamp=#{timestamp}&url=#{url}"
+
     signature = :crypto.hash(:sha, str_to_sign) |> Base.encode16(case: :lower)
     %JSSDKSignature{value: signature, timestamp: timestamp, noncestr: noncestr}
   end
@@ -34,9 +37,11 @@ defmodule WeChat.Utils do
   """
   @spec sign_card(list :: [String.t()]) :: CardSignature.t()
   @spec sign_card(wxcard_ticket :: String.t(), card_id :: String.t()) :: CardSignature.t()
-  @spec sign_card(wxcard_ticket :: String.t(), card_id :: String.t(), openid :: String.t()) :: CardSignature.t()
+  @spec sign_card(wxcard_ticket :: String.t(), card_id :: String.t(), openid :: String.t()) ::
+          CardSignature.t()
   def sign_card(wxcard_ticket, card_id), do: sign_card([wxcard_ticket, card_id])
   def sign_card(wxcard_ticket, card_id, openid), do: sign_card([wxcard_ticket, card_id, openid])
+
   def sign_card(list) do
     noncestr = random_string(16)
     timestamp = now_unix()
@@ -57,6 +62,7 @@ defmodule WeChat.Utils do
 
   def parse_uri(uri, opts \\ [])
   def parse_uri(nil, _opts), do: nil
+
   def parse_uri(uri, opts) do
     URI.parse(uri)
     |> format_uri_host(Keyword.get(opts, :host, "api.weixin.qq.com"))
@@ -66,10 +72,12 @@ defmodule WeChat.Utils do
 
   def json_decode(nil), do: nil
   def json_decode(""), do: nil
+
   def json_decode(input) do
     case Jason.decode(input) do
       {:ok, decoded} ->
         decoded
+
       {:error, _} ->
         input
     end
@@ -78,6 +86,7 @@ defmodule WeChat.Utils do
   defp format_uri_host(%URI{host: nil} = uri, input_host) when is_bitstring(input_host) do
     Map.put(uri, :host, input_host)
   end
+
   defp format_uri_host(uri, _) do
     uri
   end
@@ -85,6 +94,7 @@ defmodule WeChat.Utils do
   defp format_uri_scheme(%URI{scheme: nil} = uri, input_scheme) when is_bitstring(input_scheme) do
     Map.put(uri, :scheme, input_scheme)
   end
+
   defp format_uri_scheme(uri, _) do
     uri
   end
@@ -92,8 +102,8 @@ defmodule WeChat.Utils do
   defp format_uri_port(%URI{port: nil} = uri, input_port) when is_integer(input_port) do
     Map.put(uri, :port, input_port)
   end
+
   defp format_uri_port(uri, _) do
     uri
   end
-
 end
