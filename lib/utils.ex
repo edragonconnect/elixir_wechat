@@ -46,4 +46,54 @@ defmodule WeChat.Utils do
     %CardSignature{value: signature, timestamp: timestamp, noncestr: noncestr}
   end
 
+  @doc """
+  Merges two keyword lists into one if the value to the matched key of the former(`keyword1`) is nil, will use the latter(`keyword2`)'s value to instead it.
+  """
+  def merge_keyword(keyword1, keyword2) do
+    Keyword.merge(keyword1, keyword2, fn _k, v1, v2 ->
+      if v1 == nil, do: v2, else: v1
+    end)
+  end
+
+  def parse_uri(uri, opts \\ [])
+  def parse_uri(nil, _opts), do: nil
+  def parse_uri(uri, opts) do
+    URI.parse(uri)
+    |> format_uri_host(Keyword.get(opts, :host, "api.weixin.qq.com"))
+    |> format_uri_scheme(Keyword.get(opts, :scheme, "https"))
+    |> format_uri_port(Keyword.get(opts, :port, 443))
+  end
+
+  def json_decode(nil), do: nil
+  def json_decode(""), do: nil
+  def json_decode(input) do
+    case Jason.decode(input) do
+      {:ok, decoded} ->
+        decoded
+      {:error, _} ->
+        input
+    end
+  end
+
+  defp format_uri_host(%URI{host: nil} = uri, input_host) when is_bitstring(input_host) do
+    Map.put(uri, :host, input_host)
+  end
+  defp format_uri_host(uri, _) do
+    uri
+  end
+
+  defp format_uri_scheme(%URI{scheme: nil} = uri, input_scheme) when is_bitstring(input_scheme) do
+    Map.put(uri, :scheme, input_scheme)
+  end
+  defp format_uri_scheme(uri, _) do
+    uri
+  end
+
+  defp format_uri_port(%URI{port: nil} = uri, input_port) when is_integer(input_port) do
+    Map.put(uri, :port, input_port)
+  end
+  defp format_uri_port(uri, _) do
+    uri
+  end
+
 end

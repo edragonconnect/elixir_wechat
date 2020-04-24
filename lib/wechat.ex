@@ -1,26 +1,75 @@
 defmodule WeChat do
-  @moduledoc false
-  require Logger
 
-  alias WeChat.{Builder, APIGenerator, Utils}
+  alias WeChat.Http
+  alias WeChat.{Utils, Request}
 
-  @external_resource Path.join(Path.dirname(__DIR__), "config/wechat_api.toml")
+  @type method :: :head | :get | :delete | :trace | :options | :post | :put | :patch
+
+  defmacro __using__(opts \\ []) do
+    opts =
+      opts
+      |> Macro.prewalk(&Macro.expand(&1, __CALLER__))
+      |> initialize_opts()
+
+    quote do
+      require Logger
+
+      @opts unquote(opts)
+
+      @spec request(method :: WeChat.method(), options :: Keyword.t()) :: {:ok, term()} | {:error, WeChat.Error.t()}
+      def request(method, options) do
+        options = WeChat.Utils.merge_keyword(options, @opts)
+        WeChat.request(method, options)
+      end
+
+    end
+  end
+
+  defmodule Error do
+    @moduledoc false
+
+    @derive {Jason.Encoder, only: [:errcode, :message, :reason, :http_status]}
+    defexception errcode: nil, message: nil, reason: nil, http_status: nil
+  
+    def message(%__MODULE__{errcode: errcode, message: message, reason: reason, http_status: http_status}) do
+      "errcode: #{inspect(errcode)}, message: #{inspect(message)}, reason: #{inspect(reason)}, http_status: #{inspect(http_status)}"
+    end
+  end
+
+
+  defmodule Request do
+    @moduledoc false
+  
+    @type body :: {:form, map()} | map()
+  
+    @type t :: %__MODULE__{
+            method: atom(),
+            uri: URI.t(),
+            appid: String.t(),
+            authorizer_appid: String.t(),
+            adapter_storage: module(),
+            body: body(),
+            use_case: atom(),
+            query: keyword(),
+            opts: keyword(),
+            access_token: String.t(),
+            base: module()
+          }
+  
+    defstruct [:method, :uri, :appid, :authorizer_appid, :adapter_storage, :body, :use_case, :query, :opts, :access_token, :base]
+  end
+
+  defmodule Token do
+    @type t :: %__MODULE__{
+            access_token: String.t(),
+            refresh_token: String.t()
+          }
+    defstruct [:access_token, :refresh_token]
+  end
 
   defmodule UploadMedia do
     @moduledoc """
-    ## Example
-
-      ```elixir
-      defmodule MyClient do
-        use WeChat, appid: "myappid"
-      end
-
-      media = %WeChat.UploadMedia{
-        file_path: "path_to_file",
-        type: "image"
-      }
-      MyClient.media(:post_form, :upload, %{media: media})
-      ```
+    TODO
     """
     @type t :: %__MODULE__{
             file_path: String.t(),
@@ -33,24 +82,10 @@ defmodule WeChat do
     @enforce_keys [:file_path, :type]
     defstruct [:file_path, :type]
   end
-
+  
   defmodule UploadMediaContent do
     @moduledoc """
-    ## Example
-
-      ```elixir
-      defmodule MyClient do
-        use WeChat, appid: "myappid"
-      end
-
-      file_content = File.read!("path_to_file")
-      media = %WeChat.UploadMediaContent{
-       file_content: file_content,
-       file_name: "myfilename",
-       type: "image"
-      }
-      MyClient.media(:post_form, :upload, %{media: media})
-      ```
+    TODO
     """
     @type t :: %__MODULE__{
             file_content: binary(),
@@ -63,23 +98,6 @@ defmodule WeChat do
           }
     @enforce_keys [:file_content, :file_name, :type]
     defstruct [:file_content, :file_name, :type]
-  end
-
-  defmodule Error do
-    @derive {Jason.Encoder, only: [:errcode, :message, :reason]}
-    defexception errcode: nil, message: nil, reason: nil
-
-    def message(%__MODULE__{errcode: errcode, message: message, reason: reason}) do
-      "errcode: #{inspect(errcode)}, message: #{inspect(message)}, reason: #{inspect(reason)}"
-    end
-  end
-
-  defmodule Token do
-    @type t :: %__MODULE__{
-            access_token: String.t(),
-            refresh_token: String.t()
-          }
-    defstruct [:access_token, :refresh_token]
   end
 
   defmodule JSSDKSignature do
@@ -100,13 +118,6 @@ defmodule WeChat do
     defstruct [:value, :timestamp, :noncestr]
   end
 
-  def ensure_implements(module, behaviour, message) do
-    all = Keyword.take(module.__info__(:attributes), [:behaviour])
-    unless [behaviour] in Keyword.values(all) do
-      raise %Error{reason: :invalid_impl, message: "Expected #{inspect module} to implement #{inspect behaviour} " <> "in order to #{message}"}
-    end
-  end
-
   @doc """
   To configure and load WeChat JSSDK in the target page's url properly, use `jsapi_ticket` and `url` to generate a signature for this scenario.
   """
@@ -124,224 +135,120 @@ defmodule WeChat do
   defdelegate sign_card(wxcard_ticket, card_id, openid), to: Utils
   defdelegate sign_card(list), to: Utils
 
-  defmacro __using__(opts \\ []) do
-    opts =
-      opts
-      |> Macro.prewalk(&Macro.expand(&1, __CALLER__))
-      |> supplement_options()
+  @doc """
 
-    quote do
-      require Logger
+  ## Options
 
-      Logger.info("initialize module: #{__MODULE__} with options: #{inspect(unquote(opts))}")
+  - `:appid`,
+  - `:url`,
+  - `:authorizer_appid`,
+  - `:adapter_storage`,
+  - `:body`,
+  - `:query`,
+  - `:opts`
 
-      @wechat_app_module __MODULE__
-      @wechat_appid Keyword.get(unquote(opts), :appid)
-      @scenario Keyword.get(unquote(opts), :scenario)
-      @adapter_storage Keyword.get(unquote(opts), :adapter_storage)
+  """
+  @spec request(method :: method(), options :: Keyword.t()) :: {:ok, term()} | {:error, WeChat.Error.t()}
+  def request(method, options) do
+    method
+    |> prepare_request(options)
+    |> setup_httpclient()
+    |> send_request()
+  end
 
-      if Keyword.get(unquote(opts), :using_wechat_common_behaviour, true) do
-        unquote(generate_base(opts))
-      end
-      unquote(generate_apis(opts))
+  defp prepare_request(method, options) do
+    uri =
+      options
+      |> Keyword.get(:url, [])
+      |> Utils.parse_uri(Keyword.take(options, [:host, :scheme, :port]))
+
+    %Request{
+      method: prepare_method_opt(method),
+      uri: uri,
+      appid: options[:appid],
+      authorizer_appid: options[:authorizer_appid],
+      adapter_storage: options[:adapter_storage],
+      body: options[:body],
+      use_case: options[:use_case],
+      query: options[:query],
+      opts: options[:opts],
+      base: prepare_base_opt(options[:use_case], options[:is_3rd_component])
+    }
+  end
+
+  defp setup_httpclient(%Request{uri: %URI{path: path}}) when path == "" or path == nil do
+    raise %WeChat.Error{reason: :invalid_request, message: "Input invalid url"}
+  end
+  defp setup_httpclient(%Request{uri: %URI{path: "/cgi-bin/component" <> _}} = request) do
+    {Http.component_client(request), request}
+  end
+  defp setup_httpclient(%Request{uri: %URI{path: "cgi-bin/component" <> _}} = request) do
+    {Http.component_client(request), request}
+  end
+  defp setup_httpclient(request) do
+    {Http.client(request), request}
+  end
+
+  defp send_request({client, request}) do
+    options = [
+      method: request.method,
+      url: URI.to_string(request.uri),
+      query: request.query,
+      body: request.body,
+      opts: request.opts
+    ]
+    Http.request(client, options)
+  end
+
+  @doc false
+  def ensure_implements(module, behaviour) do
+    all = Keyword.take(module.__info__(:attributes), [:behaviour])
+    unless [behaviour] in Keyword.values(all) do
+      raise %WeChat.Error{reason: :invalid_impl, message: "Require #{inspect module} to implement adapter storage #{inspect behaviour} behaviour."}
     end
   end
 
-  defp supplement_options(opts) do
-    using_wechat_common_behaviour = Keyword.get(opts, :using_wechat_common_behaviour, true)
+  defp initialize_opts(opts) do
+    use_case = Keyword.get(opts, :use_case, :client)
 
-    if using_wechat_common_behaviour == true do
-      scenario = Keyword.get(opts, :scenario, :client)
-
-      adapter_storage =
-        if scenario == :client do
-          Keyword.get(opts, :adapter_storage, WeChat.Storage.Default)
-        else
-          Keyword.get(opts, :adapter_storage)
-        end
-
-      verify_adapter_storage(scenario, adapter_storage)
-
-      Keyword.merge(opts, [
-        adapter_storage: adapter_storage,
-        scenario: scenario,
-      ])
-    else
-      opts
-    end
+    Keyword.merge(opts, [
+      adapter_storage: map_adapter_storage(use_case, opts[:adapter_storage]),
+      use_case: use_case,
+      appid: opts[:appid],
+      authorizer_appid: opts[:authorizer_appid]
+    ])
   end
 
-  defp generate_base(opts) do
-    quote do
-      if @wechat_appid != nil do
-        unquote(generate_base_norequire_appid(opts))
-      else
-        unquote(generate_base_require_appid(opts))
-      end
-
-    end
+  defp map_adapter_storage(:client, nil) do
+    WeChat.Storage.Adapter.DefaultClient
+  end
+  defp map_adapter_storage(:client, adapter_storage) do
+    ensure_implements(adapter_storage, WeChat.Storage.Client)
+    adapter_storage
+  end
+  defp map_adapter_storage(:hub, adapter_storage) do
+    ensure_implements(adapter_storage, WeChat.Storage.Hub)
+    adapter_storage
   end
 
-  defp generate_base_norequire_appid(opts) do
-    quote do
-      if @scenario == :hub do
+  defp prepare_base_opt(:hub, true), do: WeChat.Component.Base.Hub
+  defp prepare_base_opt(_, true), do: WeChat.Component.Base.Local
+  defp prepare_base_opt(:hub, _), do: WeChat.Base.Hub
+  defp prepare_base_opt(_, _), do: WeChat.Base.Local
 
-        def get_access_token() do
-          unquote(__MODULE__).Base.get_access_token(@wechat_appid, __MODULE__, @scenario, unquote(opts))
-        end
-
-        def set_access_token(response_body, options) do
-          unquote(__MODULE__).Base.set_access_token(@wechat_appid, response_body, options, unquote(opts))
-        end
-
-        @doc"""
-        Refresh access_token of common application in `:hub` scenario.
-
-          ```elixir
-          refresh_access_token([access_token: access_token])
-          ```
-        """
-        def refresh_access_token(options) do
-          unquote(__MODULE__).Base.refresh_access_token(@wechat_appid, options, unquote(opts))
-        end
-
-      else
-
-        def get_access_token() do
-          unquote(__MODULE__).Base.get_access_token(@wechat_appid, __MODULE__, @scenario, unquote(opts))
-        end
-
-        @doc"""
-        Refresh access_token of common application in `:client` scenario, by default a refresh request will be sent to the hub server to fetch a fresh access_token.
-
-          ```elixir
-          refresh_access_token([access_token: access_token])
-          ```
-        """
-        def refresh_access_token(options) do
-          unquote(__MODULE__).Base.refresh_access_token(@wechat_appid, options, unquote(opts))
-        end
-
-      end
-    end
+  defp prepare_method_opt(method) 
+    when method == :head
+    when method == :get
+    when method == :delete
+    when method == :trace
+    when method == :options
+    when method == :post
+    when method == :put
+    when method == :patch do
+      method
   end
-
-  defp generate_base_require_appid(opts) do
-    quote do
-      if @scenario == :hub do
-
-        def get_access_token(appid) do
-          unquote(__MODULE__).Base.get_access_token(appid, __MODULE__, @scenario, unquote(opts))
-        end
-
-        def set_access_token(appid, response_body, options) do
-          unquote(__MODULE__).Base.set_access_token(appid, response_body, options, unquote(opts))
-        end
-
-        @doc"""
-        Refresh access_token of common application in `:hub` scenario.
-
-          ```elixir
-          refresh_access_token(appid, [access_token: access_token])
-          ```
-        """
-        def refresh_access_token(appid, options) do
-          unquote(__MODULE__).Base.refresh_access_token(appid, options, unquote(opts))
-        end
-
-      else
-
-        def get_access_token(appid) do
-          unquote(__MODULE__).Base.get_access_token(appid, __MODULE__, @scenario, unquote(opts))
-        end
-
-        @doc"""
-        Refresh access_token of common application in `:client` scenario, by default a refresh request will be sent to the hub server to fetch a fresh access_token.
-
-          ```elixir
-          refresh_access_token(appid, [access_token: access_token])
-          ```
-        """
-        def refresh_access_token(appid, options) do
-          unquote(__MODULE__).Base.refresh_access_token(appid, options, unquote(opts))
-        end
-
-      end
-    end
-  end
-
-  defp generate_apis(opts) do
-    APIGenerator.execute(opts, List.first(@external_resource), Builder)
-  end
-
-  defp verify_adapter_storage(_scenario = :client, nil) do
-    raise %Error{reason: :adapter_storage_is_nil, message: "Required adapter_storage is nil  when using as client"}
-  end
-  defp verify_adapter_storage(_scenario = :client, adapter_storage) do
-    ensure_implements(adapter_storage, WeChat.Adapter.Storage.Client, "config adapter_storage as client")
-  end
-  defp verify_adapter_storage(_scenario = :hub, nil) do
-    raise %Error{reason: :adapter_storage_is_nil, message: "Required adapter_storage is nil when using as hub"}
-  end
-  defp verify_adapter_storage(_scenario = :hub, adapter_storage) do
-    ensure_implements(adapter_storage, WeChat.Adapter.Storage.Hub, "config adapter_storage as hub")
-  end
-
-end
-
-defmodule WeChat.Base do
-  @moduledoc false
-  require Logger
-
-  def get_access_token(appid, module, scenario = :hub, opts) do
-    adapter_storage = Keyword.get(opts, :adapter_storage)
-    token = adapter_storage.get_access_token(appid)
-    Logger.info("scenario as #{scenario}, get_access_token: #{inspect token}")
-
-    if token != nil and token.access_token != nil do
-      token.access_token
-    else
-      access_token = remote_get_access_token(appid, module)
-      Logger.info("scenario as #{scenario}, get access_token from remote: #{inspect access_token}")
-      access_token
-    end
-  end
-  def get_access_token(appid, _module, scenario = :client, opts) do
-    adapter_storage = Keyword.get(opts, :adapter_storage)
-    token = adapter_storage.get_access_token(appid)
-    Logger.info("scenario as #{scenario}, get_access_token: #{inspect token}")
-    token.access_token
-  end
-
-  def set_access_token(appid, response_body, options, opts) do
-    adapter_storage = Keyword.get(opts, :adapter_storage)
-    Logger.info("set_access_token, response_body: #{inspect response_body}, options: #{inspect options}")
-    access_token = Map.get(response_body, "access_token")
-    adapter_storage.save_access_token(appid, access_token)
-  end
-
-  def refresh_access_token(appid, options, opts) do
-    adapter_storage = Keyword.get(opts, :adapter_storage)
-    access_token = Keyword.get(options, :access_token)
-    Logger.info("clean access_token for appid: #{appid}, expired access_token: #{access_token}")
-    adapter_storage.refresh_access_token(appid, access_token)
-  end
-
-  defp remote_get_access_token(appid, module) do
-    request_result =
-      cond do
-        function_exported?(module, :token, 4) ->
-          apply(module, :token, [:get, appid])
-        true ->
-          apply(module, :token, [:get])
-      end
-    case request_result do
-      {:ok, response} ->
-        Map.get(response.body, "access_token")
-      {:error, error} ->
-        Logger.error("remote_get_access_token error: #{inspect error}")
-        raise error
-    end
+  defp prepare_method_opt(method) do
+    raise %WeChat.Error{reason: :invalid_request, message: "Input invalid method: #{inspect method}"}
   end
 
 end

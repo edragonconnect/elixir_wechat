@@ -1,4 +1,4 @@
-defmodule WeChat.Adapter.Storage.Hub do
+defmodule WeChat.Storage.Hub do
   @moduledoc """
   The storage adapter specification for WeChat common application.
 
@@ -12,7 +12,7 @@ defmodule WeChat.Adapter.Storage.Hub do
   #### Example for WeChat Official Account Platform application
 
       defmodule MyApp.Storage.Hub do
-        @behaviour WeChat.Adapter.Storage.Hub
+        @behaviour WeChat.Storage.Hub.Common
 
         @impl true
         def get_secret_key(appid) do
@@ -42,16 +42,16 @@ defmodule WeChat.Adapter.Storage.Hub do
   @doc """
   Get secret_key of WeChat common application.
   """
-  @callback get_secret_key(appid :: String.t()) :: String.t() | nil | %WeChat.Error{}
+  @callback secret_key(appid :: String.t()) :: String.t() | nil | %WeChat.Error{}
 
   @doc """
   Get access_token of WeChat common application.
 
   ## Example
 
-      get_access_token(appid) 
+      fetch_access_token(appid) 
   """
-  @callback get_access_token(appid :: String.t()) :: %WeChat.Token{} | nil | %WeChat.Error{}
+  @callback fetch_access_token(appid :: String.t()) :: %WeChat.Token{} | nil | %WeChat.Error{}
 
   @doc """
   Save access_token of WeChat common application.
@@ -86,14 +86,14 @@ defmodule WeChat.Adapter.Storage.Hub do
 
   ## Example
 
-      get_ticket(appid, "wx_card")
-      get_ticket(appid, "jsapi")
+      fetch_ticket(appid, "wx_card")
+      fetch_ticket(appid, "jsapi")
   """
-  @callback get_ticket(appid :: String.t(), type :: String.t()) :: String.t() | nil | %WeChat.Error{}
+  @callback fetch_ticket(appid :: String.t(), type :: String.t()) :: String.t() | nil | %WeChat.Error{}
 
 end
 
-defmodule WeChat.Adapter.Storage.ComponentHub do
+defmodule WeChat.Storage.ComponentHub do
   @moduledoc """
   The storage adapter specification for WeChat component application.
 
@@ -107,7 +107,7 @@ defmodule WeChat.Adapter.Storage.ComponentHub do
   #### Example for WeChat 3rd-party Platform application
 
       defmodule MyComponentApp.Storage.Hub do
-        @behaviour WeChat.Adapter.Storage.ComponentHub
+        @behaviour WeChat.Storage.Hub.Component
 
         @impl true
         def get_secret_key(appid) do
@@ -163,16 +163,16 @@ defmodule WeChat.Adapter.Storage.ComponentHub do
   @doc """
   Get secret_key of WeChat component application.
   """
-  @callback get_secret_key(appid :: String.t()) :: String.t() | nil | %WeChat.Error{}
+  @callback secret_key(appid :: String.t()) :: String.t() | nil | %WeChat.Error{}
 
   @doc """
   Get authorizer's access_token for WeChat component application.
 
   ## Example
 
-      get_access_token(appid, authorizer_appid)
+      fetch_access_token(appid, authorizer_appid)
   """
-  @callback get_access_token(appid :: String.t(), authorizer_appid :: String.t()) ::
+  @callback fetch_access_token(appid :: String.t(), authorizer_appid :: String.t()) ::
               %WeChat.Token{} | nil | %WeChat.Error{}
 
   @doc """
@@ -216,9 +216,9 @@ defmodule WeChat.Adapter.Storage.ComponentHub do
 
   ## Example
 
-      get_component_access_token(appid)
+      fetch_component_access_token(appid)
   """
-  @callback get_component_access_token(appid :: String.t()) ::
+  @callback fetch_component_access_token(appid :: String.t()) ::
               %WeChat.Token{} | nil | %WeChat.Error{}
 
   @doc """
@@ -253,7 +253,7 @@ defmodule WeChat.Adapter.Storage.ComponentHub do
   @doc """
   Get component_verify_ticket of WeChat component application.
   """
-  @callback get_component_verify_ticket(appid :: String.t()) :: String.t() | nil | %WeChat.Error{}
+  @callback fetch_component_verify_ticket(appid :: String.t()) :: String.t() | nil | %WeChat.Error{}
 
   @doc """
   Save component_verify_ticket of WeChat component application.
@@ -282,9 +282,9 @@ defmodule WeChat.Adapter.Storage.ComponentHub do
 
   ## Example
   
-      get_ticket(appid, authorizer_appid, "wx_card")
-      get_ticket(appid, authorizer_appid, "jsapi")
+      fetch_ticket(appid, authorizer_appid, "wx_card")
+      fetch_ticket(appid, authorizer_appid, "jsapi")
   """
-  @callback get_ticket(appid :: String.t(), authorizer_appid :: String.t(), type :: String.t()) :: String.t() | nil | %WeChat.Error{}
+  @callback fetch_ticket(appid :: String.t(), authorizer_appid :: String.t(), type :: String.t()) :: String.t() | nil | %WeChat.Error{}
 
 end
