@@ -57,8 +57,7 @@ defmodule WeChat do
             use_case: atom(),
             query: keyword(),
             opts: keyword(),
-            access_token: String.t(),
-            base: module()
+            access_token: String.t()
           }
 
     defstruct [
@@ -71,8 +70,7 @@ defmodule WeChat do
       :use_case,
       :query,
       :opts,
-      :access_token,
-      :base
+      :access_token
     ]
   end
 
@@ -190,8 +188,7 @@ defmodule WeChat do
       body: options[:body],
       use_case: options[:use_case],
       query: options[:query],
-      opts: options[:opts],
-      base: prepare_base_opt(options[:use_case], options[:is_3rd_component])
+      opts: options[:opts]
     }
   end
 
@@ -247,24 +244,29 @@ defmodule WeChat do
     )
   end
 
-  defp map_adapter_storage(:client, nil) do
-    WeChat.Storage.Adapter.DefaultClient
+  defp map_adapter_storage(:client, {:default, hub_base_url}) when is_bitstring(hub_base_url) do
+    {WeChat.Storage.Adapter.DefaultClient, [hub_base_url: hub_base_url]}
   end
 
-  defp map_adapter_storage(:client, adapter_storage) do
+  defp map_adapter_storage(:client, adapter_storage) when is_atom(adapter_storage) do
     ensure_implements(adapter_storage, WeChat.Storage.Client)
-    adapter_storage
+    {adapter_storage, []}
   end
 
-  defp map_adapter_storage(:hub, adapter_storage) do
+  defp map_adapter_storage(:client, {adapter_storage, args}) when is_atom(adapter_storage) and is_list(args) do
+    ensure_implements(adapter_storage, WeChat.Storage.Client)
+    {adapter_storage, args}
+  end
+
+  defp map_adapter_storage(:hub, adapter_storage) when is_atom(adapter_storage) do
     ensure_implements(adapter_storage, WeChat.Storage.Hub)
-    adapter_storage
+    {adapter_storage, []}
   end
 
-  defp prepare_base_opt(:hub, true), do: WeChat.Component.Base.Hub
-  defp prepare_base_opt(_, true), do: WeChat.Component.Base.Local
-  defp prepare_base_opt(:hub, _), do: WeChat.Base.Hub
-  defp prepare_base_opt(_, _), do: WeChat.Base.Local
+  defp map_adapter_storage(:hub, {adapter_storage, args}) when is_atom(adapter_storage) and is_list(args) do
+    ensure_implements(adapter_storage, WeChat.Storage.Hub)
+    {adapter_storage, args}
+  end
 
   defp prepare_method_opt(method)
        when method == :head

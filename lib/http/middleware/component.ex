@@ -12,14 +12,13 @@ defmodule WeChat.Http.Middleware.Component do
   end
 
   defp execute(env, next, request) do
-    try do
-      env
-      |> prepare_request(request)
-      |> Tesla.run(next)
-      |> decode_response(env, next, request)
-    rescue
-      error ->
+    case prepare_request(env, request) do
+      {:error, error} ->
         {:error, error}
+      env ->
+        env
+        |> Tesla.run(next)
+        |> decode_response(env, next, request)
     end
   end
 
@@ -34,10 +33,10 @@ defmodule WeChat.Http.Middleware.Component do
          %Request{
            uri: %URI{path: "/cgi-bin/component/api_component_token"},
            appid: appid,
-           adapter_storage: adapter_storage
+           adapter_storage: {adapter_storage, args}
          } = request
        ) do
-    secret = adapter_storage.secret_key(appid)
+    secret = adapter_storage.secret_key(appid, args)
 
     body =
       env.body
@@ -56,28 +55,32 @@ defmodule WeChat.Http.Middleware.Component do
          %Request{uri: %URI{path: "/cgi-bin/component/api_create_preauthcode"}, appid: appid} =
            request
        ) do
-    env = append_component_access_token(env, request)
-
-    body = populate_required_into_body(env.body, [], %{component_appid: appid})
-
-    {
-      Map.put(env, :body, body),
-      request
-    }
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+      env ->
+        body = populate_required_into_body(env.body, [], %{component_appid: appid})
+        {
+          Map.put(env, :body, body),
+          request
+        }
+    end
   end
 
   defp populate_component_access_token(
          env,
          %Request{uri: %URI{path: "/cgi-bin/component/api_query_auth"}, appid: appid} = request
        ) do
-    env = append_component_access_token(env, request)
-
-    body = populate_required_into_body(env.body, [:authorization_code], %{component_appid: appid})
-
-    {
-      Map.put(env, :body, body),
-      request
-    }
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+      env ->
+        body = populate_required_into_body(env.body, [:authorization_code], %{component_appid: appid})
+        {
+          Map.put(env, :body, body),
+          request
+        }
+    end
   end
 
   defp populate_component_access_token(
@@ -85,17 +88,19 @@ defmodule WeChat.Http.Middleware.Component do
          %Request{uri: %URI{path: "/cgi-bin/component/api_authorizer_token"}, appid: appid} =
            request
        ) do
-    env = append_component_access_token(env, request)
-
-    body =
-      populate_required_into_body(env.body, [:authorizer_appid, :authorizer_refresh_token], %{
-        component_appid: appid
-      })
-
-    {
-      Map.put(env, :body, body),
-      request
-    }
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+      env ->
+        body =
+          populate_required_into_body(env.body, [:authorizer_appid, :authorizer_refresh_token], %{
+            component_appid: appid
+          })
+        {
+          Map.put(env, :body, body),
+          request
+        }
+    end
   end
 
   defp populate_component_access_token(
@@ -103,14 +108,17 @@ defmodule WeChat.Http.Middleware.Component do
          %Request{uri: %URI{path: "/cgi-bin/component/api_get_authorizer_info"}, appid: appid} =
            request
        ) do
-    env = append_component_access_token(env, request)
 
-    body = populate_required_into_body(env.body, [:authorizer_appid], %{component_appid: appid})
-
-    {
-      Map.put(env, :body, body),
-      request
-    }
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+      env ->
+        body = populate_required_into_body(env.body, [:authorizer_appid], %{component_appid: appid})
+        {
+          Map.put(env, :body, body),
+          request
+        }
+    end
   end
 
   defp populate_component_access_token(
@@ -118,17 +126,19 @@ defmodule WeChat.Http.Middleware.Component do
          %Request{uri: %URI{path: "/cgi-bin/component/api_get_authorizer_option"}, appid: appid} =
            request
        ) do
-    env = append_component_access_token(env, request)
-
-    body =
-      populate_required_into_body(env.body, [:authorizer_appid, :option_name], %{
-        component_appid: appid
-      })
-
-    {
-      Map.put(env, :body, body),
-      request
-    }
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+      env ->
+        body =
+          populate_required_into_body(env.body, [:authorizer_appid, :option_name], %{
+            component_appid: appid
+          })
+        {
+          Map.put(env, :body, body),
+          request
+        }
+    end
   end
 
   defp populate_component_access_token(
@@ -136,17 +146,19 @@ defmodule WeChat.Http.Middleware.Component do
          %Request{uri: %URI{path: "/cgi-bin/component/api_set_authorizer_option"}, appid: appid} =
            request
        ) do
-    env = append_component_access_token(env, request)
-
-    body =
-      populate_required_into_body(env.body, [:authorizer_appid, :option_name, :option_value], %{
-        component_appid: appid
-      })
-
-    {
-      Map.put(env, :body, body),
-      request
-    }
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+      env ->
+        body =
+          populate_required_into_body(env.body, [:authorizer_appid, :option_name, :option_value], %{
+            component_appid: appid
+          })
+        {
+          Map.put(env, :body, body),
+          request
+        }
+    end
   end
 
   defp populate_component_access_token(
@@ -154,19 +166,25 @@ defmodule WeChat.Http.Middleware.Component do
          %Request{uri: %URI{path: "/cgi-bin/component/api_get_authorizer_list"}, appid: appid} =
            request
        ) do
-    env = append_component_access_token(env, request)
-
-    body = populate_required_into_body(env.body, [:offset, :count], %{component_appid: appid})
-
-    {
-      Map.put(env, :body, body),
-      request
-    }
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+      env ->
+        body = populate_required_into_body(env.body, [:offset, :count], %{component_appid: appid})
+        {
+          Map.put(env, :body, body),
+          request
+        }
+    end
   end
 
   defp populate_component_access_token(env, request) do
-    env = append_component_access_token(env, request)
-    {env, request}
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+      env ->
+        {env, request}
+    end
   end
 
   defp append_component_access_token(env, %Request{access_token: component_access_token})
@@ -184,18 +202,24 @@ defmodule WeChat.Http.Middleware.Component do
     )
   end
 
-  defp append_component_access_token(env, %Request{adapter_storage: adapter_storage, appid: appid}) do
-    component_access_token = adapter_storage.component_access_token(appid)
+  defp append_component_access_token(env, %Request{adapter_storage: {adapter_storage, args}, appid: appid}) do
 
-    Logger.info(fn ->
-      "auto append component_access_token with: #{inspect(component_access_token)}"
-    end)
+    result = fetch_component_access_token(appid, adapter_storage, args)
 
-    Map.update!(
-      env,
-      :query,
-      &Keyword.put(&1 || [], :component_access_token, component_access_token)
-    )
+    case result do
+      {:error, error} ->
+        {:error, error}
+      component_access_token when is_bitstring(component_access_token) ->
+        Logger.info(fn ->
+          "auto append component_access_token with: #{inspect(component_access_token)}"
+        end)
+
+        Map.update!(
+          env,
+          :query,
+          &Keyword.put(&1 || [], :component_access_token, component_access_token)
+        )
+    end
   end
 
   defp decode_response({:ok, %{body: body} = response}, env, next, request)
@@ -233,7 +257,7 @@ defmodule WeChat.Http.Middleware.Component do
          %{"authorizer_access_token" => access_token, "expires_in" => expires_in} = response,
          %Request{
            uri: %URI{path: "/cgi-bin/component/api_query_auth"},
-           adapter_storage: adapter_storage,
+           adapter_storage: {adapter_storage, args},
            appid: appid,
            authorizer_appid: authorizer_appid
          }
@@ -241,12 +265,12 @@ defmodule WeChat.Http.Middleware.Component do
        when access_token != nil and expires_in != nil do
     authorizer_refresh_token = Map.get(response, "authorizer_refresh_token")
 
-    # apply(options[:base], :save_access_token, [options[:appid], options[:authorizer_appid], access_token, authorizer_refresh_token, options[:adapter_storage]])
     adapter_storage.save_access_token(
       appid,
       authorizer_appid,
       access_token,
-      authorizer_refresh_token
+      authorizer_refresh_token,
+      args
     )
   end
 
@@ -254,7 +278,7 @@ defmodule WeChat.Http.Middleware.Component do
          %{"authorizer_access_token" => access_token, "expires_in" => expires_in} = response,
          %Request{
            uri: %URI{path: "/cgi-bin/component/api_authorizer_token"},
-           adapter_storage: adapter_storage,
+           adapter_storage: {adapter_storage, args},
            appid: appid,
            authorizer_appid: authorizer_appid
          }
@@ -262,12 +286,12 @@ defmodule WeChat.Http.Middleware.Component do
        when access_token != nil and expires_in != nil do
     authorizer_refresh_token = Map.get(response, "authorizer_refresh_token")
 
-    # apply(options[:base], :save_access_token, [options[:appid], options[:authorizer_appid], access_token, authorizer_refresh_token, options[:adapter_storage]])
     adapter_storage.save_access_token(
       appid,
       authorizer_appid,
       access_token,
-      authorizer_refresh_token
+      authorizer_refresh_token,
+      args
     )
   end
 
@@ -275,13 +299,12 @@ defmodule WeChat.Http.Middleware.Component do
          %{"component_access_token" => component_access_token, "expires_in" => expires_in},
          %Request{
            uri: %URI{path: "/cgi-bin/component/api_component_token"},
-           adapter_storage: adapter_storage,
+           adapter_storage: {adapter_storage, args},
            appid: appid
          }
        )
        when component_access_token != nil and expires_in != nil do
-    # apply(options[:base], :save_component_access_token, [options[:appid], component_access_token, options[:adapter_storage]])
-    adapter_storage.save_component_access_token(appid, component_access_token)
+    adapter_storage.save_component_access_token(appid, component_access_token, args)
   end
 
   defp sync_to_storage_cache(_json_resp_body, _request) do
@@ -372,7 +395,7 @@ defmodule WeChat.Http.Middleware.Component do
   defp rerun_when_token_expire(
          env,
          next,
-         %Request{appid: appid, adapter_storage: adapter_storage} = request,
+         %Request{appid: appid, adapter_storage: {adapter_storage, args}} = request,
          %{"errcode" => errcode},
          request_query
        )
@@ -387,7 +410,8 @@ defmodule WeChat.Http.Middleware.Component do
     refresh_result =
       adapter_storage.refresh_component_access_token(
         appid,
-        request_query[:component_access_token]
+        request_query[:component_access_token],
+        args
       )
 
     case refresh_result do
@@ -462,4 +486,41 @@ defmodule WeChat.Http.Middleware.Component do
   defp rerun_when_token_expire(_env, _next, _request, _json_resp_body, _request_query) do
     :no_retry
   end
+
+  defp fetch_component_access_token(appid, adapter_storage, args) do
+    case adapter_storage.fetch_component_access_token(appid, args) do
+      {:ok, %WeChat.Token{access_token: access_token}} when access_token != nil ->
+        access_token
+      _ ->
+        component_access_token = remote_get_component_access_token(appid, adapter_storage, args)
+        Logger.info("get component_access_token from remote: #{inspect(component_access_token)}")
+        component_access_token
+    end
+  end
+
+  defp remote_get_component_access_token(appid, adapter_storage, args) do
+    verify_ticket = adapter_storage.fetch_component_verify_ticket(appid, args)
+    if verify_ticket == nil, do: raise("Error: verify_ticket is nil for appid: #{inspect(appid)}")
+
+    Logger.info(
+      ">>> verify_ticket when remote_get_component_access_token: #{inspect(verify_ticket)}"
+    )
+
+    result =
+      WeChat.request(:post,
+        url: "/cgi-bin/component/api_component_token",
+        body: %{"verify_ticket" => verify_ticket},
+        query: [appid: appid]
+      )
+
+    case result do
+      {:ok, response} ->
+        Map.get(response.body, "component_access_token")
+
+      {:error, error} ->
+        Logger.error("remote call /cgi-bin/component/api_component_token for appid: #{inspect(appid)} occurs an error: #{inspect(error)}")
+        {:error, error}
+    end
+  end
+
 end

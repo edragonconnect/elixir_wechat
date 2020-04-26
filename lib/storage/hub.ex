@@ -42,7 +42,7 @@ defmodule WeChat.Storage.Hub do
   @doc """
   Get secret_key of WeChat common application.
   """
-  @callback secret_key(appid :: String.t()) :: String.t() | nil | %WeChat.Error{}
+  @callback secret_key(appid :: String.t(), args :: list()) :: String.t() | nil | %WeChat.Error{}
 
   @doc """
   Get access_token of WeChat common application.
@@ -51,7 +51,7 @@ defmodule WeChat.Storage.Hub do
 
       fetch_access_token(appid) 
   """
-  @callback fetch_access_token(appid :: String.t()) :: %WeChat.Token{} | nil | %WeChat.Error{}
+  @callback fetch_access_token(appid :: String.t(), args :: list()) :: %WeChat.Token{} | nil | %WeChat.Error{}
 
   @doc """
   Save access_token of WeChat common application.
@@ -60,7 +60,7 @@ defmodule WeChat.Storage.Hub do
 
       save_access_token(appid, access_token)
   """
-  @callback save_access_token(appid :: String.t(), access_token :: String.t()) :: term()
+  @callback save_access_token(appid :: String.t(), access_token :: String.t(), args :: list()) :: term()
 
   @doc """
   Refresh access_token of WeChat common application.
@@ -69,7 +69,7 @@ defmodule WeChat.Storage.Hub do
 
       refresh_access_token(appid, access_token)
   """
-  @callback refresh_access_token(appid :: String.t(), access_token :: String.t()) :: String.t()
+  @callback refresh_access_token(appid :: String.t(), access_token :: String.t(), args :: list()) :: String.t()
 
   @doc """
   Save ticket of WeChat common application.
@@ -79,7 +79,7 @@ defmodule WeChat.Storage.Hub do
       save_ticket(appid, ticket, "wx_card")
       save_ticket(appid, ticket, "jsapi")
   """
-  @callback save_ticket(appid :: String.t(), ticket :: String.t(), type :: String.t()) :: term()
+  @callback save_ticket(appid :: String.t(), ticket :: String.t(), type :: String.t(), args :: list()) :: term()
 
   @doc """
   Get ticket of WeChat common application.
@@ -89,7 +89,7 @@ defmodule WeChat.Storage.Hub do
       fetch_ticket(appid, "wx_card")
       fetch_ticket(appid, "jsapi")
   """
-  @callback fetch_ticket(appid :: String.t(), type :: String.t()) ::
+  @callback fetch_ticket(appid :: String.t(), type :: String.t(), args :: list()) ::
               String.t() | nil | %WeChat.Error{}
 end
 
@@ -163,7 +163,7 @@ defmodule WeChat.Storage.ComponentHub do
   @doc """
   Get secret_key of WeChat component application.
   """
-  @callback secret_key(appid :: String.t()) :: String.t() | nil | %WeChat.Error{}
+  @callback secret_key(appid :: String.t(), args :: list()) :: String.t() | nil | %WeChat.Error{}
 
   @doc """
   Get authorizer's access_token for WeChat component application.
@@ -172,7 +172,7 @@ defmodule WeChat.Storage.ComponentHub do
 
       fetch_access_token(appid, authorizer_appid)
   """
-  @callback fetch_access_token(appid :: String.t(), authorizer_appid :: String.t()) ::
+  @callback fetch_access_token(appid :: String.t(), authorizer_appid :: String.t(), args :: list()) ::
               %WeChat.Token{} | nil | %WeChat.Error{}
 
   @doc """
@@ -191,7 +191,8 @@ defmodule WeChat.Storage.ComponentHub do
               appid :: String.t(),
               authorizer_appid :: String.t(),
               access_token :: String.t(),
-              refresh_token :: String.t()
+              refresh_token :: String.t(),
+              args :: list()
             ) :: term()
 
   @doc """
@@ -208,7 +209,8 @@ defmodule WeChat.Storage.ComponentHub do
   @callback refresh_access_token(
               appid :: String.t(),
               authorizer_appid :: String.t(),
-              access_token :: String.t()
+              access_token :: String.t(),
+              args :: list()
             ) :: String.t()
 
   @doc """
@@ -218,7 +220,7 @@ defmodule WeChat.Storage.ComponentHub do
 
       fetch_component_access_token(appid)
   """
-  @callback fetch_component_access_token(appid :: String.t()) ::
+  @callback fetch_component_access_token(appid :: String.t(), args :: list()) ::
               %WeChat.Token{} | nil | %WeChat.Error{}
 
   @doc """
@@ -233,7 +235,8 @@ defmodule WeChat.Storage.ComponentHub do
   """
   @callback save_component_access_token(
               appid :: String.t(),
-              component_access_token :: String.t()
+              component_access_token :: String.t(),
+              args :: list()
             ) :: term()
 
   @doc """
@@ -248,13 +251,14 @@ defmodule WeChat.Storage.ComponentHub do
   """
   @callback refresh_component_access_token(
               appid :: String.t(),
-              component_access_token :: String.t()
+              component_access_token :: String.t(),
+              args :: list()
             ) :: String.t()
 
   @doc """
   Get component_verify_ticket of WeChat component application.
   """
-  @callback fetch_component_verify_ticket(appid :: String.t()) ::
+  @callback fetch_component_verify_ticket(appid :: String.t(), args :: list()) ::
               String.t() | nil | %WeChat.Error{}
 
   @doc """
@@ -266,7 +270,8 @@ defmodule WeChat.Storage.ComponentHub do
   """
   @callback save_component_verify_ticket(
               appid :: String.t(),
-              component_verify_ticket :: String.t()
+              component_verify_ticket :: String.t(),
+              args :: list()
             ) :: term()
 
   @doc """
@@ -281,7 +286,8 @@ defmodule WeChat.Storage.ComponentHub do
               appid :: String.t(),
               authorizer_appid :: String.t(),
               ticket :: String.t(),
-              type :: String.t()
+              type :: String.t(),
+              args :: list()
             ) :: term()
 
   @doc """
@@ -292,6 +298,6 @@ defmodule WeChat.Storage.ComponentHub do
       fetch_ticket(appid, authorizer_appid, "wx_card")
       fetch_ticket(appid, authorizer_appid, "jsapi")
   """
-  @callback fetch_ticket(appid :: String.t(), authorizer_appid :: String.t(), type :: String.t()) ::
+  @callback fetch_ticket(appid :: String.t(), authorizer_appid :: String.t(), type :: String.t(), args :: list()) ::
               String.t() | nil | %WeChat.Error{}
 end
