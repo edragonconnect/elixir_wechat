@@ -178,11 +178,11 @@ defmodule WeChat do
       |> Utils.parse_uri(Keyword.take(options, [:host, :scheme, :port]))
 
     %Request{
-      method: prepare_method_opt(method),
+      method: check_method_opt(method),
       uri: uri,
       appid: options[:appid],
       authorizer_appid: options[:authorizer_appid],
-      adapter_storage: options[:adapter_storage],
+      adapter_storage: check_adapter_storage(options[:adapter_storage]),
       body: options[:body],
       query: options[:query],
       opts: options[:opts]
@@ -276,7 +276,7 @@ defmodule WeChat do
     }
   end
 
-  defp prepare_method_opt(method)
+  defp check_method_opt(method)
        when method == :head
        when method == :get
        when method == :delete
@@ -288,10 +288,21 @@ defmodule WeChat do
     method
   end
 
-  defp prepare_method_opt(method) do
+  defp check_method_opt(method) do
     raise %WeChat.Error{
       reason: :invalid_request,
       message: "Input invalid method: #{inspect(method)}"
     }
   end
+
+  defp check_adapter_storage({:default, hub_base_url} = adapter_storage) when is_bitstring(hub_base_url), do: adapter_storage
+  defp check_adapter_storage({adapter_storage, args}) when is_atom(adapter_storage) and is_list(args), do: {adapter_storage, args}
+  defp check_adapter_storage(adapter_storage) when is_atom(adapter_storage), do: {adapter_storage, []}
+  defp check_adapter_storage(invalid) do
+    raise %WeChat.Error{
+      reason: :invalid_adapter_storage_impl,
+      message: "Using invalid #{inspect(invalid)} adapter storage when dynamically call request"
+    }
+  end
+
 end
