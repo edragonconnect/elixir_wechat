@@ -20,37 +20,41 @@ defmodule WeChat.Component do
   end
 
   defp initialize_opts(opts) do
-    use_case = Keyword.get(opts, :use_case, :client)
-
     Keyword.merge(opts,
-      adapter_storage: map_adapter_storage(use_case, opts[:adapter_storage]),
-      use_case: use_case,
+      adapter_storage: map_adapter_storage(opts[:adapter_storage]),
       appid: opts[:appid],
       authorizer_appid: opts[:authorizer_appid]
     )
   end
 
-  defp map_adapter_storage(:client, {:default, hub_base_url}) when is_bitstring(hub_base_url) do
+  defp map_adapter_storage({:default, hub_base_url}) when is_bitstring(hub_base_url) do
     {WeChat.Storage.Adapter.DefaultComponentClient, [hub_base_url: hub_base_url]}
   end
-
-  defp map_adapter_storage(:client, adapter_storage) when is_atom(adapter_storage) do
-    WeChat.ensure_implements(adapter_storage, WeChat.Storage.ComponentClient)
+  defp map_adapter_storage(adapter_storage) when is_atom(adapter_storage) do
+    WeChat.ensure_implements(
+      adapter_storage,
+      [
+        WeChat.Storage.ComponentClient,
+        WeChat.Storage.ComponentHub
+      ]
+    )
     {adapter_storage, []}
   end
-
-  defp map_adapter_storage(:client, {adapter_storage, args}) when is_atom(adapter_storage) and is_list(args) do
-    WeChat.ensure_implements(adapter_storage, WeChat.Storage.ComponentClient)
+  defp map_adapter_storage({adapter_storage, args}) when is_atom(adapter_storage) and is_list(args) do
+    WeChat.ensure_implements(
+      adapter_storage,
+      [
+        WeChat.Storage.ComponentClient,
+        WeChat.Storage.ComponentHub
+      ]
+    )
     {adapter_storage, args}
   end
-
-  defp map_adapter_storage(:hub, adapter_storage) when is_atom(adapter_storage) do
-    WeChat.ensure_implements(adapter_storage, WeChat.Storage.ComponentHub)
-    {adapter_storage, []}
+  defp map_adapter_storage(invalid) do
+    raise %WeChat.Error{
+      reason: :invalid_adapter_storage_impl,
+      message: "Using unexpected #{inspect(invalid)} adapter storage, please use it as `WeChat.Storage.ComponentClient` or `WeChat.Storage.ComponentHub`"
+    }
   end
 
-  defp map_adapter_storage(:hub, {adapter_storage, args}) when is_atom(adapter_storage) and is_list(args) do
-    WeChat.ensure_implements(adapter_storage, WeChat.Storage.ComponentHub)
-    {adapter_storage, args}
-  end
 end

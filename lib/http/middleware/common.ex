@@ -220,7 +220,6 @@ defmodule WeChat.Http.Middleware.Common do
          %{"ticket" => ticket},
          %Request{
            uri: %URI{path: "/cgi-bin/ticket/getticket"},
-           use_case: :hub,
            query: query,
            adapter_storage: {adapter_storage, args},
            appid: appid,
@@ -236,7 +235,6 @@ defmodule WeChat.Http.Middleware.Common do
          %{"ticket" => ticket},
          %Request{
            uri: %URI{path: "/cgi-bin/ticket/getticket"},
-           use_case: :hub,
            query: query,
            adapter_storage: {adapter_storage, args},
            appid: appid,
