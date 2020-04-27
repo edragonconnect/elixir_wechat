@@ -491,10 +491,12 @@ defmodule WeChat.Http.Middleware.Component do
     case adapter_storage.fetch_component_access_token(appid, args) do
       {:ok, %WeChat.Token{access_token: access_token}} when access_token != nil ->
         access_token
-      _ ->
+      {:ok, %WeChat.Token{access_token: nil}} ->
         component_access_token = remote_get_component_access_token(appid, adapter_storage, args)
         Logger.info("get component_access_token from remote: #{inspect(component_access_token)}")
         component_access_token
+      {:error, error} ->
+        {:error, error}
     end
   end
 
@@ -510,7 +512,8 @@ defmodule WeChat.Http.Middleware.Component do
       WeChat.request(:post,
         url: "/cgi-bin/component/api_component_token",
         body: %{"verify_ticket" => verify_ticket},
-        query: [appid: appid]
+        query: [appid: appid],
+        adapter_storage: {adapter_storage, args}
       )
 
     case result do

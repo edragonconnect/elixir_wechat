@@ -324,15 +324,15 @@ defmodule WeChat.Http.Middleware.Common do
       {:ok, %WeChat.Token{access_token: access_token}} when access_token != nil ->
         access_token
       {:ok, %WeChat.Token{access_token: nil, refresh_token: refresh_token}} when refresh_token != nil ->
-        refresh_or_refetch_token_to_refresh(appid, authorizer_appid, refresh_token)
+        refresh_or_refetch_token_to_refresh(appid, authorizer_appid, refresh_token, adapter_storage, args)
       _ ->
-        find_and_refresh_access_token(appid, authorizer_appid)
+        find_and_refresh_access_token(appid, authorizer_appid, adapter_storage, args)
     end
   end
 
-  defp refresh_or_refetch_token_to_refresh(appid, authorizer_appid, authorizer_refresh_token) do
+  defp refresh_or_refetch_token_to_refresh(appid, authorizer_appid, authorizer_refresh_token, adapter_storage, args) do
     refresh_result =
-      remote_refresh_authorizer_access_token(appid, authorizer_appid, authorizer_refresh_token)
+      remote_refresh_authorizer_access_token(appid, authorizer_appid, authorizer_refresh_token, adapter_storage, args)
 
     Logger.info(
       ">>>> remote refresh authorizer_access_token result: #{inspect(refresh_result)} <<<<"
@@ -340,25 +340,27 @@ defmodule WeChat.Http.Middleware.Common do
 
     case refresh_result do
       nil ->
-        find_and_refresh_access_token(appid, authorizer_appid)
+        find_and_refresh_access_token(appid, authorizer_appid, adapter_storage, args)
 
       authorizer_access_token ->
         authorizer_access_token
     end
   end
 
-  defp find_and_refresh_access_token(appid, authorizer_appid) do
+  defp find_and_refresh_access_token(appid, authorizer_appid, adapter_storage, args) do
     # The cached component refresh token is expired, rerun refresh token by authorizer list.
-    refresh_token = remote_find_authorizer_refresh_token(appid, authorizer_appid)
-
-    Logger.info(
-      ">>> refresh_token: #{inspect(refresh_token)} from remote_find_authorizer_refresh_token"
-    )
-
-    remote_refresh_authorizer_access_token(appid, authorizer_appid, refresh_token)
+    case remote_find_authorizer_refresh_token(appid, authorizer_appid, adapter_storage, args) do
+      {:ok, refresh_token} ->
+        Logger.info(
+          ">>> refresh_token: #{inspect(refresh_token)} from remote_find_authorizer_refresh_token"
+        )
+        remote_refresh_authorizer_access_token(appid, authorizer_appid, refresh_token, adapter_storage, args)
+      error ->
+        error
+    end
   end
 
-  defp remote_refresh_authorizer_access_token(appid, authorizer_appid, authorizer_refresh_token) do
+  defp remote_refresh_authorizer_access_token(appid, authorizer_appid, authorizer_refresh_token, adapter_storage, args) do
     data = %{
       "authorizer_appid" => authorizer_appid,
       "authorizer_refresh_token" => authorizer_refresh_token
@@ -370,7 +372,8 @@ defmodule WeChat.Http.Middleware.Common do
       WeChat.request(:post,
         url: "/cgi-bin/component/api_authorizer_token",
         body: data,
-        appid: appid
+        appid: appid,
+        adapter_storage: {adapter_storage, args}
       )
 
     Logger.info(
@@ -392,11 +395,12 @@ defmodule WeChat.Http.Middleware.Common do
     end
   end
 
-  defp remote_find_authorizer_refresh_token(appid, authorizer_appid, offset \\ 0, count \\ 500) do
+  defp remote_find_authorizer_refresh_token(appid, authorizer_appid, adapter_storage, args, offset \\ 0, count \\ 500) do
     request_result =
       WeChat.request(:post,
         url: "/cgi-bin/component/api_get_authorizer_list",
-        body: %{"offset" => offset, "count" => count}
+        body: %{"offset" => offset, "count" => count},
+        adapter_storage: {adapter_storage, args}
       )
 
     case request_result do
@@ -411,7 +415,7 @@ defmodule WeChat.Http.Middleware.Common do
           end)
 
         if matched != nil do
-          Map.get(matched, "refresh_token")
+          {:ok, Map.get(matched, "refresh_token")}
         else
           size_in_list = length(list)
 
@@ -419,13 +423,14 @@ defmodule WeChat.Http.Middleware.Common do
             Logger.error(
               "not find matched authorizer_appid: #{authorizer_appid} in authorizer_list, please double check."
             )
-
-            raise %Error{reason: :invalid_authorizer_appid}
+            {:error, %Error{reason: :invalid_authorizer_appid}}
           else
             if offset + 1 < total_count do
               remote_find_authorizer_refresh_token(
                 appid,
                 authorizer_appid,
+                adapter_storage,
+                args,
                 offset + size_in_list,
                 count
               )
@@ -433,15 +438,14 @@ defmodule WeChat.Http.Middleware.Common do
               Logger.error(
                 "not find matched authorizer_appid: #{authorizer_appid} in authorizer_list, please double check."
               )
-
-              raise %Error{reason: :invalid_authorizer_appid}
+              {:error, %Error{reason: :invalid_authorizer_appid}}
             end
           end
         end
 
-      error ->
+      {:error, error} ->
         Logger.error("remote_find_authorizer_refresh_token error: #{inspect(error)}")
-        error
+        {:error, error}
     end
   end
 
