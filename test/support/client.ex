@@ -1,7 +1,10 @@
 defmodule TestClient1 do
-  use WeChat
+  use WeChat,
+    adapter_storage: {:default, System.fetch_env!("TEST_HUB_URL")}
 end
 
 defmodule TestClient2 do
-  use WeChat, appid: "wx6973a7470c360256"
+  use WeChat,
+    appid: System.fetch_env!("TEST_COMMON_APPID"),
+    adapter_storage: {:default, System.fetch_env!("TEST_HUB_URL")}
 end

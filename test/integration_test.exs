@@ -1,31 +1,32 @@
 defmodule WeChat.IntegrationTest do
   use ExUnit.Case
 
+  @common_appid System.fetch_env!("TEST_COMMON_APPID")
+  @test_openid System.fetch_env!("TEST_OPENID")
+
   test "user/info" do
     {:ok, response} =
-      TestClient1.request(:get, url: "/cgi-bin/user/info", appid: "wx6973a7470c360256")
+      TestClient1.request(:get, url: "/cgi-bin/user/info", appid: @common_appid)
 
     # `openid` is required but missed.
     assert Map.get(response.body, "errcode") == 40003
 
-    test_openid = "oRnWaxG1fWQOw164ED3x8Z40Wm00"
-
     query = [
-      openid: test_openid
+      openid: @test_openid
     ]
 
     {:ok, response} =
       TestClient1.request(:get,
         url: "/cgi-bin/user/info",
-        appid: "wx6973a7470c360256",
+        appid: @common_appid,
         query: query
       )
 
     assert Map.get(response.body, "errcode") == nil
-    assert Map.get(response.body, "openid") == test_openid
+    assert Map.get(response.body, "openid") == @test_openid
 
     {:ok, response} = TestClient2.request(:get, url: "/cgi-bin/user/info", query: query)
-    assert Map.get(response.body, "openid") == test_openid
+    assert Map.get(response.body, "openid") == @test_openid
   end
 
   test "media/upload - file" do
@@ -42,7 +43,7 @@ defmodule WeChat.IntegrationTest do
       TestClient1.request(:post,
         url: "/cgi-bin/media/upload",
         body: {:form, body},
-        appid: "wx6973a7470c360256"
+        appid: @common_appid
       )
 
     assert Map.get(response.body, "media_id") != nil
@@ -69,7 +70,7 @@ defmodule WeChat.IntegrationTest do
       TestClient1.request(:post,
         url: "/cgi-bin/media/upload",
         body: {:form, body},
-        appid: "wx6973a7470c360256"
+        appid: @common_appid
       )
 
     assert Map.get(response.body, "media_id") != nil
@@ -93,7 +94,7 @@ defmodule WeChat.IntegrationTest do
       TestClient1.request(:post,
         url: "/cgi-bin/material/batchget_material",
         body: body,
-        appid: "wx6973a7470c360256"
+        appid: @common_appid
       )
 
     material_items = Map.get(response.body, "item")
@@ -110,7 +111,7 @@ defmodule WeChat.IntegrationTest do
       TestClient2.request(:post,
         url: "/cgi-bin/material/batchget_material",
         body: body,
-        appid: "wx6973a7470c360256"
+        appid: @common_appid
       )
 
     assert response3.body == response.body
@@ -134,7 +135,7 @@ defmodule WeChat.IntegrationTest do
       TestClient1.request(:post,
         url: "/cgi-bin/material/batchget_material",
         body: body,
-        appid: "wx6973a7470c360256"
+        appid: @common_appid
       )
 
     material_items = Map.get(response.body, "item")

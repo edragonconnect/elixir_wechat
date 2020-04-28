@@ -1,9 +1,12 @@
 defmodule TestComponentClient1 do
-  use WeChat.Component, appid: "wxfb5c222213d161f2"
+  use WeChat.Component,
+    appid: System.fetch_env!("TEST_COMPONENT_APPID"),
+    adapter_storage: {:default, System.fetch_env!("TEST_HUB_URL")}
 end
 
 defmodule TestComponentClient2 do
   use WeChat.Component,
-    appid: "wxfb5c222213d161f2",
-    authorizer_appid: "wx6973a7470c360256"
+    appid: System.fetch_env!("TEST_COMPONENT_APPID"),
+    authorizer_appid: System.fetch_env!("TEST_COMMON_APPID"),
+    adapter_storage: {:default, System.fetch_env!("TEST_HUB_URL")}
 end

@@ -1,34 +1,44 @@
 defmodule WeChat.Component.IntegrationTest do
   use ExUnit.Case
 
+  @authorizer_appid System.fetch_env!("TEST_COMMON_APPID")
+  @test_openid System.fetch_env!("TEST_OPENID")
+
   test "user/info" do
     {:ok, response} =
       TestComponentClient1.request(:get,
         url: "/cgi-bin/user/info",
-        authorizer_appid: "wx6973a7470c360256"
+        authorizer_appid: @authorizer_appid
       )
 
-    # `openid` is required but missed.
-    assert Map.get(response.body, "errcode") == 40003
-
-    test_openid = "oRnWaxG1fWQOw164ED3x8Z40Wm00"
+    # `openid` is required but missed, or clientip is not in the ip whitelist
+    errcode = Map.get(response.body, "errcode")
+    assert errcode == 40003 or errcode == 61004
 
     query = [
-      openid: test_openid
+      openid: @test_openid
     ]
 
     {:ok, response} =
       TestComponentClient1.request(:get,
         url: "/cgi-bin/user/info",
-        authorizer_appid: "wx6973a7470c360256",
+        authorizer_appid: @authorizer_appid,
         query: query
       )
 
-    assert Map.get(response.body, "errcode") == nil
-    assert Map.get(response.body, "openid") == test_openid
+    errcode = Map.get(response.body, "errcode")
+    if errcode == nil do
+      assert Map.get(response.body, "openid") == @test_openid
+    else
+      assert errcode == 61004
+    end
 
     {:ok, response} = TestComponentClient2.request(:get, url: "/cgi-bin/user/info", query: query)
-    assert Map.get(response.body, "openid") == test_openid
+
+    errcode = Map.get(response.body, "errcode")
+    if errcode == nil do
+      assert Map.get(response.body, "openid") == @test_openid
+    end
   end
 
   test "media/upload - file" do
@@ -45,15 +55,18 @@ defmodule WeChat.Component.IntegrationTest do
       TestComponentClient1.request(:post,
         url: "/cgi-bin/media/upload",
         body: {:form, body},
-        authorizer_appid: "wx6973a7470c360256"
+        authorizer_appid: @authorizer_appid
       )
 
-    assert Map.get(response.body, "media_id") != nil
+    errcode = Map.get(response.body, "errcode")
+    if errcode == nil do
+      assert Map.get(response.body, "media_id") != nil
 
-    {:ok, response2} =
-      TestComponentClient2.request(:post, url: "/cgi-bin/media/upload", body: {:form, body})
+      {:ok, response2} =
+        TestComponentClient2.request(:post, url: "/cgi-bin/media/upload", body: {:form, body})
 
-    assert Map.get(response2.body, "media_id") != nil
+      assert Map.get(response2.body, "media_id") != nil
+    end
   end
 
   test "media/upload - content" do
@@ -72,15 +85,18 @@ defmodule WeChat.Component.IntegrationTest do
       TestComponentClient1.request(:post,
         url: "/cgi-bin/media/upload",
         body: {:form, body},
-        authorizer_appid: "wx6973a7470c360256"
+        authorizer_appid: @authorizer_appid
       )
 
-    assert Map.get(response.body, "media_id") != nil
+    errcode = Map.get(response.body, "errcode")
+    if errcode == nil do
+      assert Map.get(response.body, "media_id") != nil
 
-    {:ok, response2} =
-      TestComponentClient2.request(:post, url: "/cgi-bin/media/upload", body: {:form, body})
+      {:ok, response2} =
+        TestComponentClient2.request(:post, url: "/cgi-bin/media/upload", body: {:form, body})
 
-    assert Map.get(response2.body, "media_id") != nil
+      assert Map.get(response2.body, "media_id") != nil
+    end
   end
 
   test "batchget_material" do
@@ -96,51 +112,54 @@ defmodule WeChat.Component.IntegrationTest do
       TestComponentClient1.request(:post,
         url: "/cgi-bin/material/batchget_material",
         body: body,
-        authorizer_appid: "wx6973a7470c360256"
+        authorizer_appid: @authorizer_appid
       )
 
-    material_items = Map.get(response.body, "item")
-    assert is_list(material_items) == true
-    assert length(material_items) <= batchget_size
+    errcode = Map.get(response.body, "errcode")
+    if errcode == nil do
+      material_items = Map.get(response.body, "item")
+      assert is_list(material_items) == true
+      assert length(material_items) <= batchget_size
 
-    {:ok, response2} =
-      TestComponentClient2.request(:post, url: "/cgi-bin/material/batchget_material", body: body)
+      {:ok, response2} =
+        TestComponentClient2.request(:post, url: "/cgi-bin/material/batchget_material", body: body)
 
-    assert response2.body == response.body
+      assert response2.body == response.body
 
-    # `authorizer_appid` can be override when dynamically send request
-    {:ok, response3} =
-      TestComponentClient2.request(:post,
-        url: "/cgi-bin/material/batchget_material",
-        body: body,
-        authorizer_appid: "wx6973a7470c360256"
-      )
+      # `authorizer_appid` can be override when dynamically send request
+      {:ok, response3} =
+        TestComponentClient2.request(:post,
+          url: "/cgi-bin/material/batchget_material",
+          body: body,
+          authorizer_appid: @authorizer_appid
+        )
 
-    assert response3.body == response.body
+      assert response3.body == response.body
 
-    {:error, error} =
-      TestComponentClient2.request(:post,
-        url: "/cgi-bin/material/batchget_material",
-        body: body,
-        authorizer_appid: "fake_authorizer_appid"
-      )
+      {:error, error} =
+        TestComponentClient2.request(:post,
+          url: "/cgi-bin/material/batchget_material",
+          body: body,
+          authorizer_appid: "fake_authorizer_appid"
+        )
 
-    assert error.reason != nil
+      assert error.reason != nil
 
-    body = %{
-      type: "voice",
-      offset: 0,
-      count: 100
-    }
+      body = %{
+        type: "voice",
+        offset: 0,
+        count: 100
+      }
 
-    {:ok, response} =
-      TestComponentClient1.request(:post,
-        url: "/cgi-bin/material/batchget_material",
-        body: body,
-        authorizer_appid: "wx6973a7470c360256"
-      )
+      {:ok, response} =
+        TestComponentClient1.request(:post,
+          url: "/cgi-bin/material/batchget_material",
+          body: body,
+          authorizer_appid: @authorizer_appid
+        )
 
-    material_items = Map.get(response.body, "item")
-    assert is_list(material_items) == true
+      material_items = Map.get(response.body, "item")
+      assert is_list(material_items) == true
+    end
   end
 end
