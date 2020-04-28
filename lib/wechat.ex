@@ -5,10 +5,7 @@ defmodule WeChat do
   @type method :: :head | :get | :delete | :trace | :options | :post | :put | :patch
 
   defmacro __using__(opts \\ []) do
-    opts =
-      opts
-      |> Macro.prewalk(&Macro.expand(&1, __CALLER__))
-      |> initialize_opts()
+    opts = Macro.prewalk(opts, &Macro.expand(&1, __CALLER__))
 
     quote do
       require Logger
@@ -18,8 +15,9 @@ defmodule WeChat do
       @spec request(method :: WeChat.method(), options :: Keyword.t()) ::
               {:ok, term()} | {:error, WeChat.Error.t()}
       def request(method, options) do
-        options = WeChat.Utils.merge_keyword(options, @opts)
-        WeChat.request(method, options)
+        default_opts = Keyword.take(unquote(opts), [:adapter_storage, :appid, :authorizer_appid])
+        options = WeChat.Utils.merge_keyword(options, default_opts)
+        WeChat.common_request(method, options)
       end
     end
   end
@@ -167,6 +165,25 @@ defmodule WeChat do
   def request(method, options) do
     method
     |> prepare_request(options)
+    |> check_adapter_storage(:all)
+    |> setup_httpclient()
+    |> send_request()
+  end
+
+  @doc false
+  def common_request(method, options) do
+    method
+    |> prepare_request(options)
+    |> check_adapter_storage(:common)
+    |> setup_httpclient()
+    |> send_request()
+  end
+
+  @doc false
+  def component_request(method, options) do
+    method
+    |> prepare_request(options)
+    |> check_adapter_storage(:component)
     |> setup_httpclient()
     |> send_request()
   end
@@ -182,10 +199,10 @@ defmodule WeChat do
       uri: uri,
       appid: options[:appid],
       authorizer_appid: options[:authorizer_appid],
-      adapter_storage: check_adapter_storage(options[:adapter_storage]),
       body: options[:body],
       query: options[:query],
-      opts: options[:opts]
+      opts: options[:opts],
+      adapter_storage: options[:adapter_storage]
     }
   end
 
@@ -217,14 +234,13 @@ defmodule WeChat do
     Http.request(client, options)
   end
 
-  @doc false
-  def ensure_implements(module, available_adapter_storage_behaviours) when is_list(available_adapter_storage_behaviours) do
+  defp ensure_implements(module, available_adapter_storage_behaviours) when is_list(available_adapter_storage_behaviours) do
 
     matched =
       module.__info__(:attributes)
       |> Keyword.get(:behaviour, [])
       |> Enum.count(fn(behaviour) ->
-        behaviour in available_adapter_storage_behaviours
+        Enum.member?(available_adapter_storage_behaviours, behaviour)
       end)
 
     if matched != 1 do
@@ -235,19 +251,53 @@ defmodule WeChat do
     end
   end
 
-  defp initialize_opts(opts) do
-    Keyword.merge(opts,
-      adapter_storage: map_adapter_storage(opts[:adapter_storage]),
-      appid: opts[:appid],
-      authorizer_appid: opts[:authorizer_appid]
-    )
+  defp check_adapter_storage(request, :all) do
+    adapter_storage = do_check_adapter_storage(request.adapter_storage, :all)
+    Map.put(request, :adapter_storage, adapter_storage)
+  end
+  defp check_adapter_storage(request, :common) do
+    adapter_storage = do_check_adapter_storage(request.adapter_storage, :common)
+    Map.put(request, :adapter_storage, adapter_storage)
+  end
+  defp check_adapter_storage(request, :component) do
+    adapter_storage = do_check_adapter_storage(request.adapter_storage, :component)
+    Map.put(request, :adapter_storage, adapter_storage)
   end
 
-  defp map_adapter_storage({:default, hub_base_url}) when is_bitstring(hub_base_url) do
+  defp do_check_adapter_storage({adapter_storage, args}, :all) when is_atom(adapter_storage) and is_list(args) do
+    ensure_implements(
+      adapter_storage,
+      [
+        WeChat.Storage.Client,
+        WeChat.Storage.Hub,
+        WeChat.Storage.ComponentClient,
+        WeChat.Storage.ComponentHub
+      ]
+    )
+    {adapter_storage, args}
+  end
+  defp do_check_adapter_storage(adapter_storage, :all) when is_atom(adapter_storage) do
+    ensure_implements(
+      adapter_storage,
+      [
+        WeChat.Storage.Client,
+        WeChat.Storage.Hub,
+        WeChat.Storage.ComponentClient,
+        WeChat.Storage.ComponentHub
+      ]
+    )
+    {adapter_storage, []}
+  end
+  defp do_check_adapter_storage(invalid, :all) do
+    raise %WeChat.Error{
+      reason: :invalid_adapter_storage_impl,
+      message: "Using unexpected #{inspect(invalid)} adapter storage, please use it as one of [`WeChat.Storage.Client`, `WeChat.Storage.Hub`, `WeChat.Storage.ComponentClient`, `WeChat.Storage.ComponentHub`]"
+    }
+  end
+  defp do_check_adapter_storage({:default, hub_base_url}, :common) when is_bitstring(hub_base_url) do
     {WeChat.Storage.Adapter.DefaultClient, [hub_base_url: hub_base_url]}
   end
-
-  defp map_adapter_storage(adapter_storage) when is_atom(adapter_storage) do
+  defp do_check_adapter_storage(adapter_storage, :common) when is_atom(adapter_storage) do
     ensure_implements(
       adapter_storage,
       [
@@ -257,8 +307,7 @@ defmodule WeChat do
     )
     {adapter_storage, []}
   end
-
-  defp map_adapter_storage({adapter_storage, args}) when is_atom(adapter_storage) and is_list(args) do
+  defp do_check_adapter_storage({adapter_storage, args}, :common) when is_atom(adapter_storage) and is_list(args) do
     ensure_implements(
       adapter_storage,
       [
@@ -268,11 +317,39 @@ defmodule WeChat do
     )
     {adapter_storage, args}
   end
-
-  defp map_adapter_storage(invalid) do
+  defp do_check_adapter_storage(invalid, :common) do
     raise %WeChat.Error{
       reason: :invalid_adapter_storage_impl,
       message: "Using unexpected #{inspect(invalid)} adapter storage, please use it as `WeChat.Storage.Client` or `WeChat.Storage.Hub`"
+    }
+  end
+  defp do_check_adapter_storage({:default, hub_base_url}, :component) when is_bitstring(hub_base_url) do
+    {WeChat.Storage.Adapter.DefaultComponentClient, [hub_base_url: hub_base_url]}
+  end
+  defp do_check_adapter_storage(adapter_storage, :component) when is_atom(adapter_storage) do
+    ensure_implements(
+      adapter_storage,
+      [
+        WeChat.Storage.ComponentClient,
+        WeChat.Storage.ComponentHub
+      ]
+    )
+    {adapter_storage, []}
+  end
+  defp do_check_adapter_storage({adapter_storage, args}, :component) when is_atom(adapter_storage) and is_list(args) do
+    ensure_implements(
+      adapter_storage,
+      [
+        WeChat.Storage.ComponentClient,
+        WeChat.Storage.ComponentHub
+      ]
+    )
+    {adapter_storage, args}
+  end
+  defp do_check_adapter_storage(invalid, :component) do
+    raise %WeChat.Error{
+      reason: :invalid_adapter_storage_impl,
+      message: "Using unexpected #{inspect(invalid)} adapter storage, please use it as `WeChat.Storage.ComponentClient` or `WeChat.Storage.ComponentHub`"
     }
   end
 
@@ -292,16 +369,6 @@ defmodule WeChat do
     raise %WeChat.Error{
       reason: :invalid_request,
       message: "Input invalid method: #{inspect(method)}"
-    }
-  end
-
-  defp check_adapter_storage({:default, hub_base_url} = adapter_storage) when is_bitstring(hub_base_url), do: adapter_storage
-  defp check_adapter_storage({adapter_storage, args}) when is_atom(adapter_storage) and is_list(args), do: {adapter_storage, args}
-  defp check_adapter_storage(adapter_storage) when is_atom(adapter_storage), do: {adapter_storage, []}
-  defp check_adapter_storage(invalid) do
-    raise %WeChat.Error{
-      reason: :invalid_adapter_storage_impl,
-      message: "Using invalid #{inspect(invalid)} adapter storage when dynamically call request"
     }
   end
 
