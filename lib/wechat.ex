@@ -1,8 +1,110 @@
 defmodule WeChat do
-  alias WeChat.Http
-  alias WeChat.{Utils, Request}
+  @moduledoc """
+  The link to WeChat Official Account Platform API document in [Chinese](https://developers.weixin.qq.com/doc/offiaccount/Getting_Started/Overview.html){:target="_blank"} | [English](https://developers.weixin.qq.com/doc/offiaccount/en/Getting_Started/Overview.html){:target="_blank"}.
+
+  Currently, there are two ways to use the WeChat's APIs:
+
+    * As `common` application, directly integrates WeChat's APIs after trun on your WeChat Official Account into the developer mode ([see details](https://developers.weixin.qq.com/doc/offiaccount/en/Basic_Information/Access_Overview.html){:target="_blank"});
+    * As `component` application, authorizes your WeChat Official Account to the WeChat Official Account third-party platform application, leverages a set of common solutions from the third-party platform ([see details](https://developers.weixin.qq.com/doc/oplatform/en/Third-party_Platforms/Third_party_platform_appid.html){:target="_blank"}).
+
+  Refer the official document's recommend to manage access token ([see details](https://developers.weixin.qq.com/doc/offiaccount/en/Basic_Information/Get_access_token.html){:target="_blank"}), we need to
+  temporarily storage access token in a centralization way, we prepare four behaviours to manage the minimum responsibilities for each use case.
+
+  Use this library in the 3rd-party webapp which can read the temporary storage data (e.g. access token/jsapi-ticket/card-ticket) from the centralization nodes(hereinafter "hub"):
+
+    * The `WeChat.Storage.Client` storage adapter behaviour is required for the `common` application;
+    * The `WeChat.Storage.ComponentClient` storage adapter behaviour is required for the `component` application.
+
+  Use this library in the hub webapp:
+
+    * The `WeChat.Storage.Hub` storage adapter behaviour is required for the `common` application;
+    * The `WeChat.Storage.ComponentHub` storage adapter behaviour is required for the `component` application.
+
+  As usual, the hub webapp is one-off setup to use this library, most of time we use `elixir_wechat` is in the 3rd-party webapp as a client, so here provide a default storage adapter to conveniently
+  initialize it as a client use case:
+
+    * The `WeChat.Storage.Adapter.DefaultClient` implements `WeChat.Storage.Client` behaviour, and is used for the `common` application by default:
+
+      ```elixir
+      defmodule MyClient do
+        use WeChat,
+          adapter_storage: {:default, "MyHubBaseURL"}
+      end
+
+      # the above equals the following
+      #
+      defmodule MyClient do
+        use WeChat,
+          adapter_storage: {WeChat.Storage.Adapter.DefaultClient, "MyHubBaseURL"}
+      end
+      ```
+
+    * The `WeChat.Storage.Adapter.DefaultComponentClient` implements `WeChat.Storage.ComponentClient` behaviour, and is used for the `component` application by default:
+
+      ```elixir
+      defmodule MyComponentClient do
+        use WeChat.Component,
+          adapter_storage: {:default, "MyHubBaseURL"}
+      end
+
+      # the above equals the following
+      #
+      defmodule MyComponentClient do
+        use WeChat.Component,
+          adapter_storage: {WeChat.Storage.Adapter.DefaultComponentClient, "MyHubBaseURL"}
+      end
+      ```
+
+  ## Usage
+
+  ### As `common` application
+
+  ```elixir
+  defmodule MyClient do
+    use WeChat,
+      adapter_storage: {:default, "MyHubBaseURL"},
+      appid: "MyAppID"
+  end
+
+  MyClient.request(:post, url: "WeChatURL1", body: %{}, query: [])
+  MyClient.request(:get, url: "WeChatURL2", query: [])
+
+  # Or use `WeChat.request/2` directly
+
+  WeChat.request(:post, url: "WeChatURL1", appid: "MyAppID", adapter_storage: {:default, "MyHubBaseURL"},
+    body: %{}, query: [])
+
+  WeChat.request(:get, url: "WeChatURL2", appid: "MyAppID", adapter_storage: {:default, "MyHubBaseURL"},
+    query: [])
+  ```
+
+  ### As `component` application
+
+  ```elixir
+  defmodule MyComponentClient do
+    use WeChat.Component,
+      adapter_storage: {:default, "MyHubBaseURL"},
+      appid: "MyAppID",
+      authorizer_appid: "MyAuthorizerAppID"
+  end
+
+  MyComponentClient.request(:post, url: "WeChatURL1", body: %{}, query: [])
+  MyComponentClient.request(:post, url: "WeChatURL2", query: [])
+
+  # Or use `WeChat.request/2` directly
+
+  WeChat.request(:post, url: "WeChatURL1", appid: "MyAppID", authorizer_appid: "MyAuthorizerAppID",
+    adapter_storage: {:default, "MyHubBaseURL"}, body: %{}, query: [])
+
+  WeChat.request(:get, url: "WeChatURL2", appid: "MyAppID", authorizer_appid: "MyAuthorizerAppID",
+    adapter_storage: {:default, "MyHubBaseURL"}, query: [])
+  ```
+  """
+
+  alias WeChat.{Http, Utils}
 
   @type method :: :head | :get | :delete | :trace | :options | :post | :put | :patch
+  @type error :: atom() | WeChat.Error.t()
 
   defmacro __using__(opts \\ []) do
     opts = Macro.prewalk(opts, &Macro.expand(&1, __CALLER__))
@@ -10,10 +112,8 @@ defmodule WeChat do
     quote do
       require Logger
 
-      @opts unquote(opts)
-
       @spec request(method :: WeChat.method(), options :: Keyword.t()) ::
-              {:ok, term()} | {:error, WeChat.Error.t()}
+              {:ok, term()} | {:error, WeChat.error()}
       def request(method, options) do
         default_opts = Keyword.take(unquote(opts), [:adapter_storage, :appid, :authorizer_appid])
         options = WeChat.Utils.merge_keyword(options, default_opts)
@@ -189,10 +289,7 @@ defmodule WeChat do
   end
 
   defp prepare_request(method, options) do
-    uri =
-      options
-      |> Keyword.get(:url, [])
-      |> Utils.parse_uri(Keyword.take(options, [:host, :scheme, :port]))
+    uri = Utils.parse_uri(options[:url], Keyword.take(options, [:host, :scheme, :port]))
 
     %Request{
       method: check_method_opt(method),

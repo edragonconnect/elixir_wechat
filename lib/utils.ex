@@ -1,4 +1,6 @@
 defmodule WeChat.Utils do
+  @moduledoc false
+
   use Timex
 
   @random_alphanumeric Enum.concat([?a..?z, ?A..?Z, 48..57])

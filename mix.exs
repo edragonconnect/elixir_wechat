@@ -45,22 +45,10 @@ defmodule WeChat.MixProject do
       ],
       groups_for_modules: [
         BeHaviour: [
-          WeChat.Adapter.Storage.Client,
-          WeChat.Adapter.Storage.ComponentClient,
-          WeChat.Adapter.Storage.Hub,
-          WeChat.Adapter.Storage.ComponentHub
-        ],
-        "Guide - Common": [
-          DynamicAppIdClient,
-          DynamicAppIdHubClient,
-          GlobalAppIdClient,
-          GlobalAppIdHubClient
-        ],
-        "Guide - Component": [
-          DynamicComponentAppIdClient,
-          DynamicComponentAppIdHubClient,
-          GlobalComponentAppIdClient,
-          GlobalComponentAppIdHubClient
+          WeChat.Storage.Client,
+          WeChat.Storage.Hub,
+          WeChat.Storage.ComponentClient,
+          WeChat.Storage.ComponentHub,
         ],
         Upload: [
           WeChat.UploadMedia,
