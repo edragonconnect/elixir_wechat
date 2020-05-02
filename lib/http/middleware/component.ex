@@ -502,7 +502,7 @@ defmodule WeChat.Http.Middleware.Component do
 
   defp remote_get_component_access_token(appid, adapter_storage, args) do
     verify_ticket = adapter_storage.fetch_component_verify_ticket(appid, args)
-    if verify_ticket == nil, do: raise("Error: verify_ticket is nil for appid: #{inspect(appid)}")
+    if verify_ticket == nil, do: raise("Error: verify_ticket is nil for appid: #{inspect(appid)}, please try re-authorize")
 
     Logger.info(
       ">>> verify_ticket when remote_get_component_access_token: #{inspect(verify_ticket)}"
@@ -512,7 +512,7 @@ defmodule WeChat.Http.Middleware.Component do
       WeChat.request(:post,
         url: "/cgi-bin/component/api_component_token",
         body: %{"verify_ticket" => verify_ticket},
-        query: [appid: appid],
+        appid: appid,
         adapter_storage: {adapter_storage, args}
       )
 

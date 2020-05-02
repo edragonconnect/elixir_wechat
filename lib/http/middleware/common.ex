@@ -396,6 +396,7 @@ defmodule WeChat.Http.Middleware.Common do
   defp remote_find_authorizer_refresh_token(appid, authorizer_appid, adapter_storage, args, offset \\ 0, count \\ 500) do
     request_result =
       WeChat.request(:post,
+        appid: appid,
         url: "/cgi-bin/component/api_get_authorizer_list",
         body: %{"offset" => offset, "count" => count},
         adapter_storage: {adapter_storage, args}
