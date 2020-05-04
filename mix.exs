@@ -44,16 +44,26 @@ defmodule WeChat.MixProject do
         "README.md"
       ],
       groups_for_modules: [
-        BeHaviour: [
+        {"BeHaviour", [
           WeChat.Storage.Client,
           WeChat.Storage.Hub,
           WeChat.Storage.ComponentClient,
           WeChat.Storage.ComponentHub,
-        ],
-        Upload: [
+        ]},
+        {"Default Storage", [
+          WeChat.Storage.Adapter.DefaultClient,
+          WeChat.Storage.Adapter.DefaultComponentClient
+        ]},
+        {"Meta", [
+          WeChat.CardSignature,
+          WeChat.JSSDKSignature,
+          WeChat.Token,
+          WeChat.Error
+        ]},
+        {"Meta Upload", [
           WeChat.UploadMedia,
           WeChat.UploadMediaContent
-        ]
+        ]}
       ]
     ]
   end
