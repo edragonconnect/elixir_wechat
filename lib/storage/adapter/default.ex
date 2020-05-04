@@ -47,21 +47,18 @@ defmodule WeChat.Storage.Adapter.DefaultClient do
   alias WeChat.Error
 
   @impl true
-  def fetch_access_token(appid, args) do
-    hub_base_url = Keyword.get(args, :hub_base_url)
+  def fetch_access_token(appid, hub_base_url) do
     Connector.fetch_access_token(appid, hub_base_url)
   end
 
   @impl true
-  def refresh_access_token(appid, access_token, args) do
-    hub_base_url = Keyword.get(args, :hub_base_url)
+  def refresh_access_token(appid, access_token, hub_base_url) do
     Connector.refresh_access_token(appid, access_token, hub_base_url)
   end
 
   @impl true
-  def fetch_ticket(appid, type, args) do
+  def fetch_ticket(appid, type, hub_base_url) do
     # currently only support `type` as "jsapi" | "wx_card"
-    hub_base_url = Keyword.get(args, :hub_base_url)
     Connector.fetch_ticket(appid, type, hub_base_url)
   end
 end
@@ -113,14 +110,12 @@ defmodule WeChat.Storage.Adapter.DefaultComponentClient do
   alias WeChat.Error
 
   @impl true
-  def fetch_access_token(appid, authorizer_appid, args) do
-    hub_base_url = Keyword.get(args, :hub_base_url)
+  def fetch_access_token(appid, authorizer_appid, hub_base_url) do
     Connector.fetch_access_token(appid, authorizer_appid, hub_base_url)
   end
 
   @impl true
-  def fetch_component_access_token(appid, args) do
-    hub_base_url = Keyword.get(args, :hub_base_url)
+  def fetch_component_access_token(appid, hub_base_url) do
     Connector.fetch_component_access_token(appid, hub_base_url)
   end
 
@@ -129,15 +124,13 @@ defmodule WeChat.Storage.Adapter.DefaultComponentClient do
         appid,
         authorizer_appid,
         access_token,
-        args
+        hub_base_url
       ) do
-    hub_base_url = Keyword.get(args, :hub_base_url)
     Connector.refresh_access_token(appid, authorizer_appid, access_token, hub_base_url)
   end
 
   @impl true
-  def fetch_ticket(appid, authorizer_appid, type, args) do
-    hub_base_url = Keyword.get(args, :hub_base_url)
+  def fetch_ticket(appid, authorizer_appid, type, hub_base_url) do
     # Currently, `type` supports "jsapi" | "wx_card"
     Connector.fetch_ticket(appid, authorizer_appid, type, hub_base_url)
   end

@@ -61,18 +61,18 @@ defmodule WeChat.Storage.Client do
   @doc """
   Fetch access_token of WeChat common application.
   """
-  @callback fetch_access_token(appid :: String.t(), args :: list()) :: {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
+  @callback fetch_access_token(appid :: String.t(), args :: term()) :: {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
 
   @doc """
   Refresh access_token of WeChat common application.
   """
-  @callback refresh_access_token(appid :: String.t(), access_token :: String.t(), args :: list()) ::
+  @callback refresh_access_token(appid :: String.t(), access_token :: String.t(), args :: term()) ::
     {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
 
   @doc """
   Fetch ticket of WeChat common application, the option of `type` parameter is "wx_card" or "jsapi"(refer WeChat Official document).
   """
-  @callback fetch_ticket(appid :: String.t(), type :: String.t(), args :: list()) ::
+  @callback fetch_ticket(appid :: String.t(), type :: String.t(), args :: term()) ::
     {:ok, String.t()} | {:error, %WeChat.Error{}}
 end
 
@@ -147,13 +147,13 @@ defmodule WeChat.Storage.ComponentClient do
   @callback fetch_access_token(
               appid :: String.t(),
               authorizer_appid :: String.t(),
-              args :: list()
+              args :: term()
             ) :: {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
 
   @doc """
   Fetch access_token of WeChat component application.
   """
-  @callback fetch_component_access_token(appid :: String.t(), args :: list()) ::
+  @callback fetch_component_access_token(appid :: String.t(), args :: term()) ::
     {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
 
   @doc """
@@ -163,12 +163,12 @@ defmodule WeChat.Storage.ComponentClient do
               appid :: String.t(),
               authorizer_appid :: String.t(),
               access_token :: String.t(),
-              args :: list()
+              args :: term()
             ) :: {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
 
   @doc """
   Fetch authorizer's ticket of WeChat component application, the option of `type` parameter is "wx_card" or "jsapi"(refer WeChat Official document).
   """
-  @callback fetch_ticket(appid :: String.t(), authorizer_appid :: String.t(), type :: String.t(), args :: list()) ::
+  @callback fetch_ticket(appid :: String.t(), authorizer_appid :: String.t(), type :: String.t(), args :: term()) ::
     {:ok, String.t()} | {:error, %WeChat.Error{}}
 end

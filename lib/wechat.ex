@@ -369,7 +369,7 @@ defmodule WeChat do
     Map.put(request, :adapter_storage, adapter_storage)
   end
 
-  defp do_check_adapter_storage({adapter_storage, args}, :all) when is_atom(adapter_storage) and is_list(args) do
+  defp do_check_adapter_storage({adapter_storage, args}, :all) when is_atom(adapter_storage) do
     ensure_implements(
       adapter_storage,
       [
@@ -400,7 +400,7 @@ defmodule WeChat do
     }
   end
   defp do_check_adapter_storage({:default, hub_base_url}, :common) when is_bitstring(hub_base_url) do
-    {WeChat.Storage.Adapter.DefaultClient, [hub_base_url: hub_base_url]}
+    {WeChat.Storage.Adapter.DefaultClient, hub_base_url}
   end
   defp do_check_adapter_storage(adapter_storage, :common) when is_atom(adapter_storage) do
     ensure_implements(
@@ -429,7 +429,7 @@ defmodule WeChat do
     }
   end
   defp do_check_adapter_storage({:default, hub_base_url}, :component) when is_bitstring(hub_base_url) do
-    {WeChat.Storage.Adapter.DefaultComponentClient, [hub_base_url: hub_base_url]}
+    {WeChat.Storage.Adapter.DefaultComponentClient, hub_base_url}
   end
   defp do_check_adapter_storage(adapter_storage, :component) when is_atom(adapter_storage) do
     ensure_implements(
@@ -441,7 +441,7 @@ defmodule WeChat do
     )
     {adapter_storage, []}
   end
-  defp do_check_adapter_storage({adapter_storage, args}, :component) when is_atom(adapter_storage) and is_list(args) do
+  defp do_check_adapter_storage({adapter_storage, args}, :component) when is_atom(adapter_storage) do
     ensure_implements(
       adapter_storage,
       [
