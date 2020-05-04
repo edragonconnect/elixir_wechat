@@ -68,13 +68,17 @@ defmodule WeChat do
 
   MyClient.request(:post, url: "WeChatURL1", body: %{}, query: [])
   MyClient.request(:get, url: "WeChatURL2", query: [])
+  ```
 
-  # Or use `WeChat.request/2` directly
+  Or use `WeChat.request/2` directly
 
-  WeChat.request(:post, url: "WeChatURL1", appid: "MyAppID", adapter_storage: {:default, "MyHubBaseURL"},
+  ```elixir
+  WeChat.request(:post, url: "WeChatURL1",
+    appid: "MyAppID", adapter_storage: {:default, "MyHubBaseURL"},
     body: %{}, query: [])
 
-  WeChat.request(:get, url: "WeChatURL2", appid: "MyAppID", adapter_storage: {:default, "MyHubBaseURL"},
+  WeChat.request(:get, url: "WeChatURL2",
+    appid: "MyAppID", adapter_storage: {:default, "MyHubBaseURL"},
     query: [])
   ```
 
@@ -90,13 +94,17 @@ defmodule WeChat do
 
   MyComponentClient.request(:post, url: "WeChatURL1", body: %{}, query: [])
   MyComponentClient.request(:post, url: "WeChatURL2", query: [])
+  ```
 
-  # Or use `WeChat.request/2` directly
+  Or use `WeChat.request/2` directly
 
-  WeChat.request(:post, url: "WeChatURL1", appid: "MyAppID", authorizer_appid: "MyAuthorizerAppID",
+  ```elixir
+  WeChat.request(:post, url: "WeChatURL1",
+    appid: "MyAppID", authorizer_appid: "MyAuthorizerAppID",
     adapter_storage: {:default, "MyHubBaseURL"}, body: %{}, query: [])
 
-  WeChat.request(:get, url: "WeChatURL2", appid: "MyAppID", authorizer_appid: "MyAuthorizerAppID",
+  WeChat.request(:get, url: "WeChatURL2",
+    appid: "MyAppID", authorizer_appid: "MyAuthorizerAppID",
     adapter_storage: {:default, "MyHubBaseURL"}, query: [])
   ```
   """
