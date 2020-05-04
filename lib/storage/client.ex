@@ -37,7 +37,7 @@ defmodule WeChat.Storage.Client do
 
       fetch_access_token(appid)
   """
-  @callback fetch_access_token(appid :: String.t(), args :: list()) :: %WeChat.Token{} | nil | %WeChat.Error{}
+  @callback fetch_access_token(appid :: String.t(), args :: list()) :: {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
 
   @doc """
   Refresh access_token of WeChat common application via configured Hub servers
@@ -46,7 +46,8 @@ defmodule WeChat.Storage.Client do
 
       refresh_access_token(appid, access_token)
   """
-  @callback refresh_access_token(appid :: String.t(), access_token :: String.t(), args :: list()) :: String.t()
+  @callback refresh_access_token(appid :: String.t(), access_token :: String.t(), args :: list()) ::
+    {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
 
   @doc """
   Get ticket of WeChat common application.
@@ -57,7 +58,7 @@ defmodule WeChat.Storage.Client do
       ticket_from_hub(appid, "jsapi")
   """
   @callback fetch_ticket(appid :: String.t(), type :: String.t(), args :: list()) ::
-              String.t() | nil | %WeChat.Error{}
+    {:ok, String.t()} | {:error, %WeChat.Error{}}
 end
 
 defmodule WeChat.Storage.ComponentClient do
@@ -104,7 +105,7 @@ defmodule WeChat.Storage.ComponentClient do
               appid :: String.t(),
               authorizer_appid :: String.t(),
               args :: list()
-            ) :: %WeChat.Token{} | nil | %WeChat.Error{}
+            ) :: {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
 
   @doc """
   Get access_token of WeChat component application.
@@ -114,7 +115,7 @@ defmodule WeChat.Storage.ComponentClient do
       component_access_token_from_hub(appid)
   """
   @callback fetch_component_access_token(appid :: String.t(), args :: list()) ::
-              %WeChat.Token{} | nil | %WeChat.Error{}
+    {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
 
   @doc """
   Refresh authorizer's access_token in WeChat component application.
@@ -132,7 +133,7 @@ defmodule WeChat.Storage.ComponentClient do
               authorizer_appid :: String.t(),
               access_token :: String.t(),
               args :: list()
-            ) :: String.t()
+            ) :: {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
 
   @doc """
   Get authorizer's ticket in WeChat component application.
@@ -143,5 +144,5 @@ defmodule WeChat.Storage.ComponentClient do
       fetch_ticket(appid, authorizer_appid, "jsapi")
   """
   @callback fetch_ticket(appid :: String.t(), authorizer_appid :: String.t(), type :: String.t(), args :: list()) ::
-              String.t() | nil | %WeChat.Error{}
+    {:ok, String.t()} | {:error, %WeChat.Error{}}
 end
