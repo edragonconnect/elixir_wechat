@@ -1,14 +1,18 @@
 # Elixir for WeChat
 
+## Introduce
+
 At present, there are two ways to build application in WeChat Official Account open ecosystem:
 
 * Integrates public APIs after trun on your WeChat Official Account into the developer mode ([see details](https://developers.weixin.qq.com/doc/offiaccount/en/Basic_Information/Access_Overview.html)), here named it as `common` application in document of `elixir_wechat`, the same below;
 * Authorizes your WeChat Official Account to the WeChat Official Account third-party platform application ([see details](https://developers.weixin.qq.com/doc/oplatform/en/Third-party_Platforms/Third_party_platform_appid.html)), here named it as `component` application in document of `elixir_wechat`, the same below.
 
+This library wants to provide a flexible way to explicitly call **ALL** of WeChat's API functions, meanwhile helps to maintain the fetch-expiry-refresh loop cycle of `access_token`, you can choose your way to
+storage `access_token`, `jssdk-ticket` and `card-ticket` as well.
 
 ## Background
 
-Refer the official [document](https://developers.weixin.qq.com/doc/offiaccount/en/Basic_Information/Get_access_token.html)'s recommend there need the centralization nodes to maintain the lifecycle of `access_token` (storage/refresh/fetch).
+Refer the official [document](https://developers.weixin.qq.com/doc/offiaccount/en/Basic_Information/Get_access_token.html)'s recommend there needs the centralization nodes to maintain the lifecycle of `access_token` (storage/refresh/fetch).
 
 This library is designed for these four use scenarios:
 

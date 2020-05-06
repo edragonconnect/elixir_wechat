@@ -131,7 +131,9 @@ defmodule WeChat do
   end
 
   defmodule Error do
-    @moduledoc false
+    @moduledoc """
+    A WeChat error expression.
+    """
 
     @derive {Jason.Encoder, only: [:errcode, :message, :reason, :http_status]}
     defexception errcode: nil, message: nil, reason: nil, http_status: nil
@@ -179,6 +181,7 @@ defmodule WeChat do
   end
 
   defmodule Token do
+    @moduledoc false
     @type t :: %__MODULE__{
             access_token: String.t(),
             refresh_token: String.t()
@@ -188,7 +191,7 @@ defmodule WeChat do
 
   defmodule UploadMedia do
     @moduledoc """
-    TODO
+    Use for upload media file related.
     """
     @type t :: %__MODULE__{
             file_path: String.t(),
@@ -204,7 +207,7 @@ defmodule WeChat do
 
   defmodule UploadMediaContent do
     @moduledoc """
-    TODO
+    Use for upload media file content related.
     """
     @type t :: %__MODULE__{
             file_content: binary(),
@@ -220,6 +223,9 @@ defmodule WeChat do
   end
 
   defmodule JSSDKSignature do
+    @moduledoc """
+    A WeChat JSSDK signature expression.
+    """
     @type t :: %__MODULE__{
             value: String.t(),
             timestamp: integer(),
@@ -229,6 +235,9 @@ defmodule WeChat do
   end
 
   defmodule CardSignature do
+    @moduledoc """
+    A WeChat Card signature expression.
+    """
     @type t :: %__MODULE__{
             value: String.t(),
             timestamp: integer(),
@@ -256,17 +265,53 @@ defmodule WeChat do
   defdelegate sign_card(list), to: Utils
 
   @doc """
+  Call WeChat's HTTP API functions in a explicit way.
+
+  We can defined a global module to assemble `appid`, `authorizer_appid`(only used for "component" application), and `adapter_storage`.
+
+  For example:
+
+  ```
+  defmodule MyClient do
+    use WeChat,
+      appid: "...",
+      adapter_storage: "..."
+  end
+  ```
+
+  ```
+  defmodule MyComponentClient do
+    use WeChat.Component,
+      appid: "...",
+      authorizer_appid: "...",
+      adapter_storage: "..."
+  end
+  ```
+
+  And then we can use `MyClient` or `MyComponentClient` to call `request/2`, as usual, there dose NOT need to pass the above parameters when invoke, but if needed you
+  input them to override.
+
+  We can directly use `WeChat.request/2` as well, in this way, the `appid`, `authorizer_appid`(only used for "component" application), and `adapter_storage` are required
+  for each invoke.
+
+  The `method` parameter can be used as one of `t:method/0`.
 
   ## Options
 
-  - `:appid`,
-  - `:url`,
-  - `:authorizer_appid`,
-  - `:adapter_storage`,
-  - `:body`,
-  - `:query`,
-  - `:opts`
-
+  - `:appid`, required, if you use a global module to assemble it, this value is optional. If you are using a `common` application, `appid` means the application id of your 
+  WeChat Official Account; if you are a `component` application, `appid` means the application id of your WeChat Official Account third-party platform application.
+  - `:authorizer_appid`, optional, if you are using a `component` application, this value is required, the application id of your WeChat Official Account third-party platform
+  application.
+  - `:adapter_storage`, required, the predefined storage way to used for `access_token`, `jsapi_ticket`, and `card_ticket`, here provide a `{:default, "MyHubURL"}` as option.
+  - `:url`, required, the URL to call WeChat's HTTP API function, for example, "/cgi-bin/material/get_materialcount", also you can input a completed URL like
+  this "https://api.weixin.qq.com/cgi-bin/material/get_materialcount".
+  - `:host`, optional, the host of URI to call WeChat's HTTP API function, if you input a completed URL with host, this value is optional, by default it is "api.weixin.qq.com".
+  - `:scheme`, optional, the scheme of URI to call WeChat's HTTP API function, if you input a completed URL with scheme, this value is optional, by default it is "https".
+  - `:port`, optional, the port of URI to call WeChat's HTTP API function, if you input a completed URL with port, this value is optional, by default it is "443"(as integer).
+  - `:body`, optional, a map, decided by your used WeChat's HTTP API functions, following WeChat official document to setup the body of the request.
+  - `:query`, optional, a keyword, decided by your used WeChat's HTTP API functions, following WeChat official document to setup the query string of the request, this library will
+  automatically appended a proper `access_token` into the query of each request, so we do NOT need to input `access_token` parameter.
+  - `:opts`, optional, custom, per-request middleware or adapter options (exported from `Tesla`)
   """
   @spec request(method :: method(), options :: Keyword.t()) ::
           {:ok, term()} | {:error, WeChat.Error.t()}
