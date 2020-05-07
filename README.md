@@ -16,15 +16,17 @@ Refer the official [document](https://developers.weixin.qq.com/doc/offiaccount/e
 
 This library is designed for these four use scenarios:
 
-1. Use this library in the *client* part of `common` application, there is a `WeChat.Storage.Client` behaviour to implement.
-2. Use this library in the *server* part of `common` application, there is a `WeChat.Storage.Hub` behaviour to implement.
-3. Use this library in the *client* part of `component` application, there is a `WeChat.Storage.ComponentClient` behaviour to implement.
-4. Use this library in the *server* part of `component` application, there is a `WeChat.Storage.ComponentHub` behaviour to implement.
+| Application | Scenario | Storage Behaviour |
+| -------- | ----------- | --------- |
+| `common` | *client* | `WeChat.Storage.Client` |
+| `common` | *hub* | `WeChat.Storage.Hub` |
+| `component` | *client* | `WeChat.Storage.ComponentClient` |
+| `component` | *hub* | `WeChat.Storage.ComponentHub` |
 
 Notice:
 
 * The above "*client*" means the business logic which rely on the `access_token` maintained by the centralization nodes;
-* The above "*server*" means the implements in the centralization nodes.
+* The above "*hub*" means the implements in the centralization nodes.
 
 ## How to use
 
@@ -47,7 +49,7 @@ POST https://api.weixin.qq.com/cgi-bin/material/batchget_material
 
 QueryString: access_token="ACCESS_TOKEN"
 
-Body: {"type":TYPE, "offset":OFFSET, "count":COUNT}
+Body: {"type": "image", "offset": 0, "count": 10}
 ``` 
 
 #### As `common` application
