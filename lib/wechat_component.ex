@@ -4,16 +4,24 @@ defmodule WeChat.Component do
   require Logger
 
   defmacro __using__(opts \\ []) do
-    opts = Macro.prewalk(opts, &Macro.expand(&1, __CALLER__))
+    default_opts =
+      opts
+      |> Macro.prewalk(&Macro.expand(&1, __CALLER__))
+      |> Keyword.take([:adapter_storage, :appid, :authorizer_appid])
 
     quote do
 
+      def default_opts, do: unquote(default_opts)
+
+      @doc """
+      See WeChat.request/2 for more information.
+      """
       def request(method, options) do
-        default_opts = Keyword.take(unquote(opts), [:adapter_storage, :appid, :authorizer_appid])
-        options = WeChat.Utils.merge_keyword(options, default_opts)
+        options = WeChat.Utils.merge_keyword(options, unquote(default_opts))
         WeChat.component_request(method, options)
       end
 
+      defoverridable default_opts: 0, request: 2
     end
   end
 
