@@ -25,7 +25,7 @@ defmodule WeChat.Http.Middleware.Common do
         end
 
       {:cached, result} ->
-        result
+        {:ok, result}
     end
   end
 
@@ -51,6 +51,7 @@ defmodule WeChat.Http.Middleware.Common do
         {
           :cached,
           %{
+            status: 200,
             body: %{"errcode" => 0, "errmsg" => "ok", "ticket" => ticket},
             headers: []
           }
