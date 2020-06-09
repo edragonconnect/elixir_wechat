@@ -32,3 +32,4 @@ config/test.exs
 node_modules
 *.sublime-project
 *.sublime-workspace
+*.iml

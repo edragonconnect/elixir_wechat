@@ -31,6 +31,28 @@ defmodule WeChat.Http.Middleware.Component do
   defp populate_component_access_token(
          env,
          %Request{
+           uri: %URI{path: "/sns/oauth2/component/access_token"},
+           authorizer_appid: authorizer_appid,
+           appid: appid
+         } = request
+       ) do
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+
+      env ->
+        query = Keyword.merge([appid: authorizer_appid, component_appid: appid], env.query)
+
+        {
+          Map.put(env, :query, query),
+          request
+        }
+    end
+  end
+
+  defp populate_component_access_token(
+         env,
+         %Request{
            uri: %URI{path: "/cgi-bin/component/api_component_token"},
            appid: appid,
            adapter_storage: {adapter_storage, args}

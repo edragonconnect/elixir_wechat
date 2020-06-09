@@ -115,18 +115,27 @@ defmodule WeChat do
   @type error :: atom() | WeChat.Error.t()
 
   defmacro __using__(opts \\ []) do
-    opts = Macro.prewalk(opts, &Macro.expand(&1, __CALLER__))
+    default_opts =
+      opts
+      |> Macro.prewalk(&Macro.expand(&1, __CALLER__))
+      |> Keyword.take([:adapter_storage, :appid, :authorizer_appid])
 
     quote do
       require Logger
 
+      def default_opts, do: unquote(default_opts)
+
+      @doc """
+      See WeChat.request/2 for more information.
+      """
       @spec request(method :: WeChat.method(), options :: Keyword.t()) ::
               {:ok, term()} | {:error, WeChat.error()}
       def request(method, options) do
-        default_opts = Keyword.take(unquote(opts), [:adapter_storage, :appid, :authorizer_appid])
-        options = WeChat.Utils.merge_keyword(options, default_opts)
+        options = WeChat.Utils.merge_keyword(options, unquote(default_opts))
         WeChat.common_request(method, options)
       end
+
+      defoverridable request: 2
     end
   end
 
@@ -365,6 +374,14 @@ defmodule WeChat do
   end
 
   defp setup_httpclient(%Request{uri: %URI{path: "cgi-bin/component" <> _}} = request) do
+    {Http.component_client(request), request}
+  end
+
+  defp setup_httpclient(%Request{uri: %URI{path: "/sns/oauth2/component/" <> _}} = request) do
+    {Http.component_client(request), request}
+  end
+
+  defp setup_httpclient(%Request{uri: %URI{path: "sns/oauth2/component/" <> _}} = request) do
     {Http.component_client(request), request}
   end
 
