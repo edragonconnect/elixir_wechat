@@ -377,6 +377,14 @@ defmodule WeChat do
     {Http.component_client(request), request}
   end
 
+  defp setup_httpclient(%Request{uri: %URI{path: "/sns/oauth2/component/" <> _}} = request) do
+    {Http.component_client(request), request}
+  end
+
+  defp setup_httpclient(%Request{uri: %URI{path: "sns/oauth2/component/" <> _}} = request) do
+    {Http.component_client(request), request}
+  end
+
   defp setup_httpclient(request) do
     {Http.client(request), request}
   end
