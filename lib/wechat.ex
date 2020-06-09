@@ -135,7 +135,7 @@ defmodule WeChat do
         WeChat.common_request(method, options)
       end
 
-      defoverridable default_opts: 0, request: 2
+      defoverridable request: 2
     end
   end
 
