@@ -83,7 +83,7 @@ defmodule WeChat.Http.Middleware.Common do
     prepared_query = [
       grant_type: "client_credential",
       appid: request.appid,
-      secret: adapter_storage.secret_key(appid, args)
+      secret: adapter_storage.fetch_secret_key(appid, args)
     ]
 
     {Map.update!(env, :query, &Keyword.merge(&1, prepared_query)), request}

@@ -58,7 +58,7 @@ defmodule WeChat.Http.Middleware.Component do
            adapter_storage: {adapter_storage, args}
          } = request
        ) do
-    secret = adapter_storage.secret_key(appid, args)
+    secret = adapter_storage.fetch_secret_key(appid, args)
 
     body =
       env.body
