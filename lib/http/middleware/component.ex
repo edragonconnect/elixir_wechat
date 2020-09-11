@@ -523,29 +523,36 @@ defmodule WeChat.Http.Middleware.Component do
   end
 
   defp remote_get_component_access_token(appid, adapter_storage, args) do
-    verify_ticket = adapter_storage.fetch_component_verify_ticket(appid, args)
-    if verify_ticket == nil, do: raise("Error: verify_ticket is nil for appid: #{inspect(appid)}, please try re-authorize")
 
-    Logger.info(
-      ">>> verify_ticket when remote_get_component_access_token: #{inspect(verify_ticket)}"
-    )
+    case adapter_storage.fetch_component_verify_ticket(appid, args) do
+      {:ok, verify_ticket} when verify_ticket != nil ->
 
-    result =
-      WeChat.request(:post,
-        url: "/cgi-bin/component/api_component_token",
-        body: %{"verify_ticket" => verify_ticket},
-        appid: appid,
-        adapter_storage: {adapter_storage, args}
-      )
+        Logger.info(
+          ">>> verify_ticket when remote_get_component_access_token: #{inspect(verify_ticket)}"
+        )
 
-    case result do
-      {:ok, response} ->
-        Map.get(response.body, "component_access_token")
+        result =
+          WeChat.request(:post,
+            url: "/cgi-bin/component/api_component_token",
+            body: %{"verify_ticket" => verify_ticket},
+            appid: appid,
+            adapter_storage: {adapter_storage, args}
+          )
+
+        case result do
+          {:ok, response} ->
+            Map.get(response.body, "component_access_token")
+
+          {:error, error} ->
+            Logger.error("remote call /cgi-bin/component/api_component_token for appid: #{inspect(appid)} occurs an error: #{inspect(error)}")
+            {:error, error}
+        end
 
       {:error, error} ->
-        Logger.error("remote call /cgi-bin/component/api_component_token for appid: #{inspect(appid)} occurs an error: #{inspect(error)}")
-        {:error, error}
+        Logger.error("occur an error: #{inspect(error)} when get component access token for appid: #{inspect(appid)}")
+        raise("Error: verify_ticket is nil for appid: #{inspect(appid)}, please try re-authorize")
     end
+
   end
 
 end
