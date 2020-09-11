@@ -58,18 +58,25 @@ defmodule WeChat.Http.Middleware.Component do
            adapter_storage: {adapter_storage, args}
          } = request
        ) do
-    secret = adapter_storage.fetch_secret_key(appid, args)
 
-    body =
-      env.body
-      |> populate_required_into_body([:component_verify_ticket])
-      |> Map.put(:component_appid, request.appid)
-      |> Map.put(:component_appsecret, secret)
+    case adapter_storage.fetch_secret_key(appid, args) do
+      {:ok, secret} ->
+        body =
+          env.body
+          |> populate_required_into_body([:component_verify_ticket])
+          |> Map.put(:component_appid, request.appid)
+          |> Map.put(:component_appsecret, secret)
 
-    {
-      Map.put(env, :body, body),
-      request
-    }
+        {
+          Map.put(env, :body, body),
+          request
+        }
+
+      {:error, error} ->
+        Logger.error("fail to fetch secret_key for appid: #{inspect(appid)} occurs error: #{inspect(error)}")
+        raise "invalid config for appid: #{inspect(appid)}"
+
+    end
   end
 
   defp populate_component_access_token(

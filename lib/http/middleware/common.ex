@@ -80,13 +80,23 @@ defmodule WeChat.Http.Middleware.Common do
            adapter_storage: {adapter_storage, args}
          } = request
        ) do
-    prepared_query = [
-      grant_type: "client_credential",
-      appid: request.appid,
-      secret: adapter_storage.fetch_secret_key(appid, args)
-    ]
 
-    {Map.update!(env, :query, &Keyword.merge(&1, prepared_query)), request}
+    case adapter_storage.fetch_secret_key(appid, args) do
+      {:ok, secret} ->
+
+        prepared_query = [
+          grant_type: "client_credential",
+          appid: request.appid,
+          secret: secret
+        ]
+
+        {Map.update!(env, :query, &Keyword.merge(&1, prepared_query)), request}
+
+      {:error, error} ->
+        Logger.error("fail to fetch secret_key for appid: #{inspect(appid)} occurs error: #{inspect(error)}")
+        raise "invalid config for appid: #{inspect(appid)}"
+    end
+
   end
 
   defp populate_access_token(env, %Request{uri: %URI{path: "/sns/userinfo"}} = request) do
