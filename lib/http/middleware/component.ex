@@ -15,6 +15,7 @@ defmodule WeChat.Http.Middleware.Component do
     case prepare_request(env, request) do
       {:error, error} ->
         {:error, error}
+
       env ->
         env
         |> Tesla.run(next)
@@ -58,7 +59,6 @@ defmodule WeChat.Http.Middleware.Component do
            adapter_storage: {adapter_storage, args}
          } = request
        ) do
-
     case adapter_storage.fetch_secret_key(appid, args) do
       {:ok, secret} ->
         body =
@@ -90,8 +90,10 @@ defmodule WeChat.Http.Middleware.Component do
     case append_component_access_token(env, request) do
       {:error, error} ->
         {:error, error}
+
       env ->
         body = populate_required_into_body(env.body, [], %{component_appid: appid})
+
         {
           Map.put(env, :body, body),
           request
@@ -106,8 +108,11 @@ defmodule WeChat.Http.Middleware.Component do
     case append_component_access_token(env, request) do
       {:error, error} ->
         {:error, error}
+
       env ->
-        body = populate_required_into_body(env.body, [:authorization_code], %{component_appid: appid})
+        body =
+          populate_required_into_body(env.body, [:authorization_code], %{component_appid: appid})
+
         {
           Map.put(env, :body, body),
           request
@@ -123,11 +128,13 @@ defmodule WeChat.Http.Middleware.Component do
     case append_component_access_token(env, request) do
       {:error, error} ->
         {:error, error}
+
       env ->
         body =
           populate_required_into_body(env.body, [:authorizer_appid, :authorizer_refresh_token], %{
             component_appid: appid
           })
+
         {
           Map.put(env, :body, body),
           request
@@ -140,12 +147,14 @@ defmodule WeChat.Http.Middleware.Component do
          %Request{uri: %URI{path: "/cgi-bin/component/api_get_authorizer_info"}, appid: appid} =
            request
        ) do
-
     case append_component_access_token(env, request) do
       {:error, error} ->
         {:error, error}
+
       env ->
-        body = populate_required_into_body(env.body, [:authorizer_appid], %{component_appid: appid})
+        body =
+          populate_required_into_body(env.body, [:authorizer_appid], %{component_appid: appid})
+
         {
           Map.put(env, :body, body),
           request
@@ -161,11 +170,13 @@ defmodule WeChat.Http.Middleware.Component do
     case append_component_access_token(env, request) do
       {:error, error} ->
         {:error, error}
+
       env ->
         body =
           populate_required_into_body(env.body, [:authorizer_appid, :option_name], %{
             component_appid: appid
           })
+
         {
           Map.put(env, :body, body),
           request
@@ -181,11 +192,17 @@ defmodule WeChat.Http.Middleware.Component do
     case append_component_access_token(env, request) do
       {:error, error} ->
         {:error, error}
+
       env ->
         body =
-          populate_required_into_body(env.body, [:authorizer_appid, :option_name, :option_value], %{
-            component_appid: appid
-          })
+          populate_required_into_body(
+            env.body,
+            [:authorizer_appid, :option_name, :option_value],
+            %{
+              component_appid: appid
+            }
+          )
+
         {
           Map.put(env, :body, body),
           request
@@ -201,8 +218,10 @@ defmodule WeChat.Http.Middleware.Component do
     case append_component_access_token(env, request) do
       {:error, error} ->
         {:error, error}
+
       env ->
         body = populate_required_into_body(env.body, [:offset, :count], %{component_appid: appid})
+
         {
           Map.put(env, :body, body),
           request
@@ -214,6 +233,7 @@ defmodule WeChat.Http.Middleware.Component do
     case append_component_access_token(env, request) do
       {:error, error} ->
         {:error, error}
+
       env ->
         {env, request}
     end
@@ -235,13 +255,14 @@ defmodule WeChat.Http.Middleware.Component do
   end
 
   defp append_component_access_token(env, %Request{adapter_storage: adapter_storage, appid: appid}) do
-
     result = WeChat.Component.fetch_component_access_token(appid, adapter_storage)
 
     case result do
       {:error, error} ->
         {:error, error}
-      {:ok, %WeChat.Token{access_token: component_access_token}} when is_bitstring(component_access_token) ->
+
+      {:ok, %WeChat.Token{access_token: component_access_token}}
+      when is_bitstring(component_access_token) ->
         Logger.info(fn ->
           "auto append component_access_token with: #{inspect(component_access_token)}"
         end)
@@ -452,7 +473,8 @@ defmodule WeChat.Http.Middleware.Component do
       )
 
     case refresh_result do
-      {:ok, %WeChat.Token{access_token: new_component_access_token}} when new_component_access_token != nil ->
+      {:ok, %WeChat.Token{access_token: new_component_access_token}}
+      when new_component_access_token != nil ->
         request = Map.put(request, :access_token, new_component_access_token)
         execute(env, next, request)
 
@@ -523,5 +545,4 @@ defmodule WeChat.Http.Middleware.Component do
   defp rerun_when_token_expire(_env, _next, _request, _json_resp_body, _request_query) do
     :no_retry
   end
-
 end

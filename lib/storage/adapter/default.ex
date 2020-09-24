@@ -173,7 +173,11 @@ defmodule WeChat.Storage.DefaultHubConnector do
     token =
       hub_base_url
       |> client()
-      |> Tesla.post(Url.to_refresh_access_token(), %{appid: appid, authorizer_appid: authorizer_appid, access_token: access_token})
+      |> Tesla.post(Url.to_refresh_access_token(), %{
+        appid: appid,
+        authorizer_appid: authorizer_appid,
+        access_token: access_token
+      })
       |> response_to_access_token()
 
     Logger.info(
@@ -195,7 +199,9 @@ defmodule WeChat.Storage.DefaultHubConnector do
   def fetch_access_token(appid, authorizer_appid, hub_base_url) do
     hub_base_url
     |> client()
-    |> Tesla.get(Url.to_fetch_access_token(), query: [appid: appid, authorizer_appid: authorizer_appid])
+    |> Tesla.get(Url.to_fetch_access_token(),
+      query: [appid: appid, authorizer_appid: authorizer_appid]
+    )
     |> response_to_access_token()
   end
 
@@ -216,7 +222,9 @@ defmodule WeChat.Storage.DefaultHubConnector do
   def fetch_ticket(appid, authorizer_appid, type, hub_base_url) do
     hub_base_url
     |> client()
-    |> Tesla.get(Url.to_fetch_ticket(), query: [appid: appid, authorizer_appid: authorizer_appid, type: type])
+    |> Tesla.get(Url.to_fetch_ticket(),
+      query: [appid: appid, authorizer_appid: authorizer_appid, type: type]
+    )
     |> response_to_ticket()
   end
 
@@ -228,18 +236,27 @@ defmodule WeChat.Storage.DefaultHubConnector do
     ])
   end
 
-  defp response_to_access_token(
-         {:ok, %{status: 200, body: %{"access_token" => access_token}}}
-       ) when access_token != nil and access_token != "" do
+  defp response_to_access_token({:ok, %{status: 200, body: %{"access_token" => access_token}}})
+       when access_token != nil and access_token != "" do
     {
       :ok,
       %WeChat.Token{
-        access_token: access_token,
+        access_token: access_token
       }
     }
   end
 
-  defp response_to_access_token({:ok, %{body: %{"errcode" => errcode, "http_status" => http_status, "message" => message, "reason" => reason}}}) do
+  defp response_to_access_token(
+         {:ok,
+          %{
+            body: %{
+              "errcode" => errcode,
+              "http_status" => http_status,
+              "message" => message,
+              "reason" => reason
+            }
+          }}
+       ) do
     {
       :error,
       %Error{
@@ -250,6 +267,7 @@ defmodule WeChat.Storage.DefaultHubConnector do
       }
     }
   end
+
   defp response_to_access_token({:error, error}) do
     {
       :error,

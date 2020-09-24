@@ -27,6 +27,7 @@ defmodule WeChat.Component.IntegrationTest do
       )
 
     errcode = Map.get(response.body, "errcode")
+
     if errcode == nil do
       assert Map.get(response.body, "openid") == @test_openid
     else
@@ -36,6 +37,7 @@ defmodule WeChat.Component.IntegrationTest do
     {:ok, response} = TestComponentClient2.request(:get, url: "/cgi-bin/user/info", query: query)
 
     errcode = Map.get(response.body, "errcode")
+
     if errcode == nil do
       assert Map.get(response.body, "openid") == @test_openid
     end
@@ -59,6 +61,7 @@ defmodule WeChat.Component.IntegrationTest do
       )
 
     errcode = Map.get(response.body, "errcode")
+
     if errcode == nil do
       assert Map.get(response.body, "media_id") != nil
 
@@ -89,6 +92,7 @@ defmodule WeChat.Component.IntegrationTest do
       )
 
     errcode = Map.get(response.body, "errcode")
+
     if errcode == nil do
       assert Map.get(response.body, "media_id") != nil
 
@@ -116,6 +120,7 @@ defmodule WeChat.Component.IntegrationTest do
       )
 
     errcode = Map.get(response.body, "errcode")
+
     if errcode == nil do
       material_items = Map.get(response.body, "item")
       assert is_list(material_items) == true

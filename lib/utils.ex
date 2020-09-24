@@ -93,11 +93,13 @@ defmodule WeChat.Utils do
       message: Map.get(body, "errmsg")
     }
   end
+
   def as_error(error) when is_map(error) do
     %WeChat.Error{
       message: Jason.encode(error)
     }
   end
+
   def as_error(error) when is_atom(error) do
     %WeChat.Error{
       message: error

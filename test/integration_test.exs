@@ -5,8 +5,7 @@ defmodule WeChat.IntegrationTest do
   @test_openid System.fetch_env!("TEST_OPENID")
 
   test "user/info" do
-    {:ok, response} =
-      TestClient1.request(:get, url: "/cgi-bin/user/info", appid: @common_appid)
+    {:ok, response} = TestClient1.request(:get, url: "/cgi-bin/user/info", appid: @common_appid)
 
     # `openid` is required but missed.
     assert Map.get(response.body, "errcode") == 40003

@@ -9,13 +9,20 @@ if Code.ensure_loaded?(Plug) do
     def call(conn, opts) do
       conn = fetch_query_params(conn)
       query_params = conn.query_params
+
       result =
         try do
           case fetch(query_params, opts[:adapter_storage]) do
             {:ok, response} ->
               %{"ticket" => Map.get(response.body, "ticket")}
+
             error ->
-              Logger.error "get_ticket occur error: #{inspect error} with query_params: #{inspect query_params}"
+              Logger.error(
+                "get_ticket occur error: #{inspect(error)} with query_params: #{
+                  inspect(query_params)
+                }"
+              )
+
               %{"error" => "invalid request"}
           end
         rescue
@@ -29,8 +36,12 @@ if Code.ensure_loaded?(Plug) do
       |> halt()
     end
 
-    defp fetch(%{"appid" => appid, "authorizer_appid" => authorizer_appid, "type" => ticket_type}, adapter_storage) do
+    defp fetch(
+           %{"appid" => appid, "authorizer_appid" => authorizer_appid, "type" => ticket_type},
+           adapter_storage
+         ) do
       comp_adapter_storage = adapter_storage[:component]
+
       WeChat.request(
         :get,
         appid: appid,
@@ -40,8 +51,10 @@ if Code.ensure_loaded?(Plug) do
         adapter_storage: comp_adapter_storage
       )
     end
+
     defp fetch(%{"appid" => appid, "type" => ticket_type}, adapter_storage) do
       common_adapter_storage = adapter_storage[:common]
+
       WeChat.request(
         :get,
         appid: appid,
@@ -50,6 +63,7 @@ if Code.ensure_loaded?(Plug) do
         adapter_storage: common_adapter_storage
       )
     end
+
     defp fetch(_, _) do
       :invalid
     end

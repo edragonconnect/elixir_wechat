@@ -51,7 +51,7 @@ defmodule WeChat.Storage.Hub do
       end
 
   #### Use `MyAppStorageHub`
-  
+
   Global configure `MyAppStorageHub`
 
       defmodule Client do
@@ -81,29 +81,36 @@ defmodule WeChat.Storage.Hub do
   @doc """
   Fetch access_token of WeChat common application.
   """
-  @callback fetch_access_token(appid :: String.t(), args :: term()) :: {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
+  @callback fetch_access_token(appid :: String.t(), args :: term()) ::
+              {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
 
   @doc """
   Save access_token of WeChat common application.
   """
-  @callback save_access_token(appid :: String.t(), access_token :: String.t(), args :: term()) :: term()
+  @callback save_access_token(appid :: String.t(), access_token :: String.t(), args :: term()) ::
+              term()
 
   @doc """
   Refresh access_token of WeChat common application.
   """
   @callback refresh_access_token(appid :: String.t(), access_token :: String.t(), args :: term()) ::
-    {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
+              {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
 
   @doc """
   Save ticket of WeChat common application, the option of `type` parameter is "wx_card" or "jsapi"(refer WeChat Official document).
   """
-  @callback save_ticket(appid :: String.t(), ticket :: String.t(), type :: String.t(), args :: term()) :: term()
+  @callback save_ticket(
+              appid :: String.t(),
+              ticket :: String.t(),
+              type :: String.t(),
+              args :: term()
+            ) :: term()
 
   @doc """
   Fetch ticket of WeChat common application, the option of `type` parameter is "wx_card" or "jsapi"(refer WeChat Official document).
   """
   @callback fetch_ticket(appid :: String.t(), type :: String.t(), args :: term()) ::
-    {:ok, String.t()} | {:error, %WeChat.Error{}}
+              {:ok, String.t()} | {:error, %WeChat.Error{}}
 end
 
 defmodule WeChat.Storage.ComponentHub do
@@ -187,7 +194,7 @@ defmodule WeChat.Storage.ComponentHub do
       end
 
   #### Use `MyComponentAppStorageHub`
-  
+
   Global configure `MyComponentAppStorageHub`
 
       defmodule Client do
@@ -217,8 +224,12 @@ defmodule WeChat.Storage.ComponentHub do
   @doc """
   Get authorizer's access_token for WeChat component application.
   """
-  @callback fetch_access_token(appid :: String.t(), authorizer_appid :: String.t(), args :: term()) ::
-    {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
+  @callback fetch_access_token(
+              appid :: String.t(),
+              authorizer_appid :: String.t(),
+              args :: term()
+            ) ::
+              {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
 
   @doc """
   Save authorizer's access_token for WeChat component application.
@@ -245,7 +256,7 @@ defmodule WeChat.Storage.ComponentHub do
   Get access_token of WeChat component application.
   """
   @callback fetch_component_access_token(appid :: String.t(), args :: term()) ::
-    {:ok, %WeChat.Token{}}
+              {:ok, %WeChat.Token{}}
 
   @doc """
   Save access_token of WeChat component application.
@@ -269,7 +280,7 @@ defmodule WeChat.Storage.ComponentHub do
   Fetch component_verify_ticket of WeChat component application.
   """
   @callback fetch_component_verify_ticket(appid :: String.t(), args :: term()) ::
-    {:ok, String.t()} | {:error, %WeChat.Error{}}
+              {:ok, String.t()} | {:error, %WeChat.Error{}}
 
   @doc """
   Save component_verify_ticket of WeChat component application.
@@ -294,6 +305,11 @@ defmodule WeChat.Storage.ComponentHub do
   @doc """
   Fetch authorizer account's ticket in WeChat component application.
   """
-  @callback fetch_ticket(appid :: String.t(), authorizer_appid :: String.t(), type :: String.t(), args :: term()) ::
-    {:ok, String.t()} | {:error, %WeChat.Error{}}
+  @callback fetch_ticket(
+              appid :: String.t(),
+              authorizer_appid :: String.t(),
+              type :: String.t(),
+              args :: term()
+            ) ::
+              {:ok, String.t()} | {:error, %WeChat.Error{}}
 end

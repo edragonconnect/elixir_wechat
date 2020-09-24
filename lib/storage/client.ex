@@ -36,7 +36,7 @@ defmodule WeChat.Storage.Client do
       end
 
   #### Use `MyAppStorageClient`
-  
+
   Global configure `MyAppStorageClient`
 
       defmodule Client do
@@ -67,13 +67,13 @@ defmodule WeChat.Storage.Client do
   Refresh access_token of WeChat common application.
   """
   @callback refresh_access_token(appid :: String.t(), access_token :: String.t(), args :: term()) ::
-    {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
+              {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
 
   @doc """
   Fetch ticket of WeChat common application, the option of `type` parameter is "wx_card" or "jsapi"(refer WeChat Official document).
   """
   @callback fetch_ticket(appid :: String.t(), type :: String.t(), args :: term()) ::
-    {:ok, String.t()} | {:error, %WeChat.Error{}}
+              {:ok, String.t()} | {:error, %WeChat.Error{}}
 end
 
 defmodule WeChat.Storage.ComponentClient do
@@ -119,7 +119,7 @@ defmodule WeChat.Storage.ComponentClient do
       end
 
   #### Use `MyComponentAppStorageClient`
-  
+
   Global configure `MyComponentAppStorageClient`
 
       defmodule Client do
@@ -154,7 +154,7 @@ defmodule WeChat.Storage.ComponentClient do
   Fetch access_token of WeChat component application.
   """
   @callback fetch_component_access_token(appid :: String.t(), args :: term()) ::
-    {:ok, %WeChat.Token{}} 
+              {:ok, %WeChat.Token{}}
 
   @doc """
   Refresh authorizer's access_token in WeChat component application.
@@ -169,6 +169,11 @@ defmodule WeChat.Storage.ComponentClient do
   @doc """
   Fetch authorizer's ticket of WeChat component application, the option of `type` parameter is "wx_card" or "jsapi"(refer WeChat Official document).
   """
-  @callback fetch_ticket(appid :: String.t(), authorizer_appid :: String.t(), type :: String.t(), args :: term()) ::
-    {:ok, String.t()} | {:error, %WeChat.Error{}}
+  @callback fetch_ticket(
+              appid :: String.t(),
+              authorizer_appid :: String.t(),
+              type :: String.t(),
+              args :: term()
+            ) ::
+              {:ok, String.t()} | {:error, %WeChat.Error{}}
 end

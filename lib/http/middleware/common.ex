@@ -31,9 +31,12 @@ defmodule WeChat.Http.Middleware.Common do
 
   defp try_use_from_cache(
          env,
-         %Request{authorizer_appid: nil, uri: %URI{path: "/cgi-bin/ticket/getticket"}, adapter_storage: {adapter_storage, args}} = request
+         %Request{
+           authorizer_appid: nil,
+           uri: %URI{path: "/cgi-bin/ticket/getticket"},
+           adapter_storage: {adapter_storage, args}
+         } = request
        ) do
-
     type = Keyword.get(request.query, :type)
 
     appid = request.appid
@@ -56,9 +59,12 @@ defmodule WeChat.Http.Middleware.Common do
 
   defp try_use_from_cache(
          env,
-         %Request{authorizer_appid: authorizer_appid, uri: %URI{path: "/cgi-bin/ticket/getticket"}, adapter_storage: {adapter_storage, args}} = request
+         %Request{
+           authorizer_appid: authorizer_appid,
+           uri: %URI{path: "/cgi-bin/ticket/getticket"},
+           adapter_storage: {adapter_storage, args}
+         } = request
        ) do
-
     type = Keyword.get(request.query, :type)
 
     appid = request.appid
@@ -77,7 +83,6 @@ defmodule WeChat.Http.Middleware.Common do
       {:error, _} ->
         {:cont, env, request}
     end
-
   end
 
   defp try_use_from_cache(env, request) do
@@ -98,7 +103,6 @@ defmodule WeChat.Http.Middleware.Common do
            adapter_storage: {adapter_storage, args}
          } = request
        ) do
-
     case adapter_storage.fetch_secret_key(appid, args) do
       {:ok, secret} ->
         prepared_query = [
@@ -116,7 +120,6 @@ defmodule WeChat.Http.Middleware.Common do
 
         {Map.update!(env, :query, &Keyword.merge(&1, prepared_query)), request}
     end
-
   end
 
   defp populate_access_token(env, %Request{uri: %URI{path: "/sns/userinfo"}} = request) do
@@ -348,5 +351,4 @@ defmodule WeChat.Http.Middleware.Common do
   defp rerun_when_token_expire(_env, _next, _request, _json_resp_body, _request_query) do
     :no_retry
   end
-
 end
