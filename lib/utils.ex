@@ -85,6 +85,25 @@ defmodule WeChat.Utils do
     end
   end
 
+  def as_error(%{body: %{"errcode" => errcode} = body, status: status}) do
+    # Transfer WeChat error response into `WeChat.Error` type.
+    %WeChat.Error{
+      errcode: errcode,
+      http_status: status,
+      message: Map.get(body, "errmsg")
+    }
+  end
+  def as_error(error) when is_map(error) do
+    %WeChat.Error{
+      message: Jason.encode(error)
+    }
+  end
+  def as_error(error) when is_atom(error) do
+    %WeChat.Error{
+      message: error
+    }
+  end
+
   defp format_uri_host(%URI{host: nil} = uri, input_host) when is_bitstring(input_host) do
     Map.put(uri, :host, input_host)
   end

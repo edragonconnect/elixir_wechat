@@ -72,10 +72,13 @@ defmodule WeChat.Http.Middleware.Component do
           request
         }
 
-      {:error, error} ->
-        Logger.error("fail to fetch secret_key for appid: #{inspect(appid)} occurs error: #{inspect(error)}")
-        raise "invalid config for appid: #{inspect(appid)}"
+      nil ->
+        Logger.error("not found secret_key for appid: #{inspect(appid)}")
 
+        raise %Error{
+          reason: :invalid_config,
+          message: "not found secret_key for appid: #{inspect(appid)}"
+        }
     end
   end
 
@@ -231,14 +234,14 @@ defmodule WeChat.Http.Middleware.Component do
     )
   end
 
-  defp append_component_access_token(env, %Request{adapter_storage: {adapter_storage, args}, appid: appid}) do
+  defp append_component_access_token(env, %Request{adapter_storage: adapter_storage, appid: appid}) do
 
-    result = fetch_component_access_token(appid, adapter_storage, args)
+    result = WeChat.Component.fetch_component_access_token(appid, adapter_storage)
 
     case result do
       {:error, error} ->
         {:error, error}
-      component_access_token when is_bitstring(component_access_token) ->
+      {:ok, %WeChat.Token{access_token: component_access_token}} when is_bitstring(component_access_token) ->
         Logger.info(fn ->
           "auto append component_access_token with: #{inspect(component_access_token)}"
         end)
@@ -348,7 +351,7 @@ defmodule WeChat.Http.Middleware.Component do
   end
 
   defp populate_required_into_body(body, [], prepared) when is_map(prepared) and is_map(body) do
-    Map.merge(body, prepared)
+    prepared
   end
 
   defp populate_required_into_body(nil, [], prepared) when is_map(prepared) do
@@ -356,7 +359,10 @@ defmodule WeChat.Http.Middleware.Component do
   end
 
   defp populate_required_into_body(body, [], prepared) when is_map(prepared) do
-    raise "invalid body: #{inspect(body)} while process required fields"
+    raise %Error{
+      reason: :invalid_request,
+      message: "http body: #{inspect(body)} is invalid"
+    }
   end
 
   defp populate_required_into_body(body, [current_field | rest_fields], prepared)
@@ -384,11 +390,6 @@ defmodule WeChat.Http.Middleware.Component do
   end
 
   defp populate_required_into_body(body, [current_field | _rest_fields], prepared)
-       when is_map(prepared) and is_map(body) do
-    raise "invalid field: #{inspect(current_field)} in body"
-  end
-
-  defp populate_required_into_body(body, [current_field | _rest_fields], prepared)
        when is_map(prepared) and is_bitstring(body) and is_bitstring(current_field) do
     updated = Map.put(prepared, String.to_atom(current_field), body)
     populate_required_into_body(body, [], updated)
@@ -401,8 +402,12 @@ defmodule WeChat.Http.Middleware.Component do
   end
 
   defp populate_required_into_body(body, [current_field | _rest_fields], prepared)
+       when is_map(prepared) and is_map(body)
        when is_map(prepared) and is_bitstring(body) do
-    raise "invalid field: #{inspect(current_field)} in body"
+    raise %Error{
+      reason: :invalid_request,
+      message: "invalid field: #{inspect(current_field)} from request body"
+    }
   end
 
   defp populate_required_into_body(nil, fields, prepared)
@@ -412,7 +417,10 @@ defmodule WeChat.Http.Middleware.Component do
 
   defp populate_required_into_body(body, fields, prepared)
        when is_map(prepared) and is_list(fields) and fields != [] do
-    raise "invalid body: #{inspect(body)} while process required fields"
+    raise %Error{
+      reason: :invalid_request,
+      message: "invalid request body: #{inspect(body)}"
+    }
   end
 
   defp rerun_when_token_expire(env, next, request, %{body: body} = response) do
@@ -444,8 +452,8 @@ defmodule WeChat.Http.Middleware.Component do
       )
 
     case refresh_result do
-      {:ok, %WeChat.Token{access_token: new_component_access_token}} ->
-        request = Keyword.put(request, :access_token, new_component_access_token)
+      {:ok, %WeChat.Token{access_token: new_component_access_token}} when new_component_access_token != nil ->
+        request = Map.put(request, :access_token, new_component_access_token)
         execute(env, next, request)
 
       {:error, error} ->
@@ -514,52 +522,6 @@ defmodule WeChat.Http.Middleware.Component do
 
   defp rerun_when_token_expire(_env, _next, _request, _json_resp_body, _request_query) do
     :no_retry
-  end
-
-  defp fetch_component_access_token(appid, adapter_storage, args) do
-    case adapter_storage.fetch_component_access_token(appid, args) do
-      {:ok, %WeChat.Token{access_token: access_token}} when access_token != nil ->
-        access_token
-      {:ok, %WeChat.Token{access_token: nil}} ->
-        component_access_token = remote_get_component_access_token(appid, adapter_storage, args)
-        Logger.info("get component_access_token from remote: #{inspect(component_access_token)}")
-        component_access_token
-      {:error, error} ->
-        {:error, error}
-    end
-  end
-
-  defp remote_get_component_access_token(appid, adapter_storage, args) do
-
-    case adapter_storage.fetch_component_verify_ticket(appid, args) do
-      {:ok, verify_ticket} when verify_ticket != nil ->
-
-        Logger.info(
-          ">>> verify_ticket when remote_get_component_access_token: #{inspect(verify_ticket)}"
-        )
-
-        result =
-          WeChat.request(:post,
-            url: "/cgi-bin/component/api_component_token",
-            body: %{"verify_ticket" => verify_ticket},
-            appid: appid,
-            adapter_storage: {adapter_storage, args}
-          )
-
-        case result do
-          {:ok, response} ->
-            Map.get(response.body, "component_access_token")
-
-          {:error, error} ->
-            Logger.error("remote call /cgi-bin/component/api_component_token for appid: #{inspect(appid)} occurs an error: #{inspect(error)}")
-            {:error, error}
-        end
-
-      {:error, error} ->
-        Logger.error("occur an error: #{inspect(error)} when get component access token for appid: #{inspect(appid)}")
-        raise("Error: verify_ticket is nil for appid: #{inspect(appid)}, please try re-authorize")
-    end
-
   end
 
 end

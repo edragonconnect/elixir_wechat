@@ -61,7 +61,7 @@ defmodule WeChat.Storage.Client do
   @doc """
   Fetch access_token of WeChat common application.
   """
-  @callback fetch_access_token(appid :: String.t(), args :: term()) :: {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
+  @callback fetch_access_token(appid :: String.t(), args :: term()) :: {:ok, %WeChat.Token{}}
 
   @doc """
   Refresh access_token of WeChat common application.
@@ -148,13 +148,13 @@ defmodule WeChat.Storage.ComponentClient do
               appid :: String.t(),
               authorizer_appid :: String.t(),
               args :: term()
-            ) :: {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
+            ) :: {:ok, %WeChat.Token{}}
 
   @doc """
   Fetch access_token of WeChat component application.
   """
   @callback fetch_component_access_token(appid :: String.t(), args :: term()) ::
-    {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
+    {:ok, %WeChat.Token{}} 
 
   @doc """
   Refresh authorizer's access_token in WeChat component application.

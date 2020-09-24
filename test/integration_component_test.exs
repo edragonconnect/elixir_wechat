@@ -143,7 +143,7 @@ defmodule WeChat.Component.IntegrationTest do
           authorizer_appid: "fake_authorizer_appid"
         )
 
-      assert error.reason != nil
+      assert error.reason == :invalid_authorizer_appid
 
       body = %{
         type: "voice",

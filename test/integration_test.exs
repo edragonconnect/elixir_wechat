@@ -123,7 +123,8 @@ defmodule WeChat.IntegrationTest do
         appid: "fake_authorizer_appid"
       )
 
-    assert error.reason != nil
+    # invalid appid response from WeChat server side
+    assert error.errcode == 40013
 
     body = %{
       type: "voice",

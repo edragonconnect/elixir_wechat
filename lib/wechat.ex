@@ -121,7 +121,6 @@ defmodule WeChat do
       |> Keyword.take([:adapter_storage, :appid, :authorizer_appid])
 
     quote do
-      require Logger
 
       def default_opts, do: unquote(default_opts)
 
@@ -195,6 +194,8 @@ defmodule WeChat do
             access_token: String.t(),
             refresh_token: String.t()
           }
+
+    @derive Jason.Encoder
     defstruct [:access_token, :refresh_token]
   end
 
@@ -350,23 +351,41 @@ defmodule WeChat do
     |> send_request()
   end
 
+  def fetch_access_token(appid, adapter_storage) when is_atom(adapter_storage) do
+    fetch_access_token(appid, {adapter_storage, nil})
+  end
+
+  def fetch_access_token(appid, {adapter_storage, args}) do
+    token = adapter_storage.fetch_access_token(appid, args)
+    case token do
+      {:ok, %WeChat.Token{access_token: access_token}} when access_token != nil ->
+        token
+      _ ->
+        refetch_access_token(appid, adapter_storage, args)
+    end
+  end
+
   defp prepare_request(method, options) do
     uri = Utils.parse_uri(options[:url], Keyword.take(options, [:host, :scheme, :port]))
+
+    query = options[:query] || []
+
+    appid = options[:appid] || Keyword.get(query, :appid)
 
     %Request{
       method: check_method_opt(method),
       uri: uri,
-      appid: options[:appid],
+      appid: appid,
       authorizer_appid: options[:authorizer_appid],
       body: options[:body],
-      query: options[:query],
+      query: query,
       opts: options[:opts],
       adapter_storage: options[:adapter_storage]
     }
   end
 
   defp setup_httpclient(%Request{uri: %URI{path: path}}) when path == "" or path == nil do
-    raise %WeChat.Error{reason: :invalid_request, message: "Input invalid url"}
+    raise %WeChat.Error{reason: :invalid_request, message: "url is required"}
   end
 
   defp setup_httpclient(%Request{uri: %URI{path: "/cgi-bin/component" <> _}} = request) do
@@ -412,8 +431,8 @@ defmodule WeChat do
 
     if matched != 1 do
       raise %WeChat.Error{
-        reason: :invalid_adapter_storage_impl,
-        message: "Please ensure module: #{inspect(module)} implemented one of #{inspect(available_adapter_storage_behaviours)} adapter storage behaviour"
+        reason: :invalid_config,
+        message: "please ensure module: #{inspect(module)} implemented one of #{inspect(available_adapter_storage_behaviours)} adapter storage behaviour"
       }
     end
   end
@@ -457,8 +476,8 @@ defmodule WeChat do
   end
   defp do_check_adapter_storage(invalid, :all) do
     raise %WeChat.Error{
-      reason: :invalid_adapter_storage_impl,
-      message: "Using unexpected #{inspect(invalid)} adapter storage, please use it as one of [`WeChat.Storage.Client`, `WeChat.Storage.Hub`, `WeChat.Storage.ComponentClient`, `WeChat.Storage.ComponentHub`]"
+      reason: :invalid_config,
+      message: "using unexpected #{inspect(invalid)} adapter storage, please use it as one of [`WeChat.Storage.Client`, `WeChat.Storage.Hub`, `WeChat.Storage.ComponentClient`, `WeChat.Storage.ComponentHub`]"
     }
   end
   defp do_check_adapter_storage({:default, hub_base_url}, :common) when is_bitstring(hub_base_url) do
@@ -486,8 +505,8 @@ defmodule WeChat do
   end
   defp do_check_adapter_storage(invalid, :common) do
     raise %WeChat.Error{
-      reason: :invalid_adapter_storage_impl,
-      message: "Using unexpected #{inspect(invalid)} adapter storage, please use it as `WeChat.Storage.Client` or `WeChat.Storage.Hub`"
+      reason: :invalid_config,
+      message: "using unexpected #{inspect(invalid)} adapter storage, please use it as `WeChat.Storage.Client` or `WeChat.Storage.Hub`"
     }
   end
   defp do_check_adapter_storage({:default, hub_base_url}, :component) when is_bitstring(hub_base_url) do
@@ -515,8 +534,8 @@ defmodule WeChat do
   end
   defp do_check_adapter_storage(invalid, :component) do
     raise %WeChat.Error{
-      reason: :invalid_adapter_storage_impl,
-      message: "Using unexpected #{inspect(invalid)} adapter storage, please use it as `WeChat.Storage.ComponentClient` or `WeChat.Storage.ComponentHub`"
+      reason: :invalid_config,
+      message: "using unexpected #{inspect(invalid)} adapter storage, please use it as `WeChat.Storage.ComponentClient` or `WeChat.Storage.ComponentHub`"
     }
   end
 
@@ -535,8 +554,32 @@ defmodule WeChat do
   defp check_method_opt(method) do
     raise %WeChat.Error{
       reason: :invalid_request,
-      message: "Input invalid method: #{inspect(method)}"
+      message: "input invalid http method: #{inspect(method)}"
     }
+  end
+
+  defp refetch_access_token(appid, adapter_storage, args) do
+
+    request_result =
+      WeChat.request(
+        :get,
+        appid: appid,
+        adapter_storage: {adapter_storage, args},
+        url: "/cgi-bin/token"
+      )
+
+    case request_result do
+      {:ok, %{body: %{"access_token" => access_token}}} ->
+        {
+          :ok,
+          %WeChat.Token{access_token: access_token}
+        }
+      {:ok, response} ->
+        raise Utils.as_error(response)
+      {:error, error} ->
+        raise Utils.as_error(error)
+    end
+
   end
 
 end

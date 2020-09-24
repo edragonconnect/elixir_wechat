@@ -12,7 +12,7 @@ defmodule WeChat.Http.Middleware.Common do
   end
 
   defp execute(env, next, request) do
-    case try_use_storage_cache(env, request) do
+    case try_use_from_cache(env, request) do
       {:cont, env, request} ->
         case prepare_request(env, request) do
           {:error, error} ->
@@ -29,24 +29,16 @@ defmodule WeChat.Http.Middleware.Common do
     end
   end
 
-  defp try_use_storage_cache(
+  defp try_use_from_cache(
          env,
-         %Request{uri: %URI{path: "/cgi-bin/ticket/getticket"}, adapter_storage: {adapter_storage, args}} = request
+         %Request{authorizer_appid: nil, uri: %URI{path: "/cgi-bin/ticket/getticket"}, adapter_storage: {adapter_storage, args}} = request
        ) do
-    authorizer_appid = request.authorizer_appid
 
     type = Keyword.get(request.query, :type)
 
     appid = request.appid
 
-    result =
-      if authorizer_appid != nil do
-        adapter_storage.fetch_ticket(appid, authorizer_appid, type, args)
-      else
-        adapter_storage.fetch_ticket(appid, type, args)
-      end
-
-    case result do
+    case adapter_storage.fetch_ticket(appid, type, args) do
       {:ok, ticket} ->
         {
           :cached,
@@ -62,7 +54,33 @@ defmodule WeChat.Http.Middleware.Common do
     end
   end
 
-  defp try_use_storage_cache(env, request) do
+  defp try_use_from_cache(
+         env,
+         %Request{authorizer_appid: authorizer_appid, uri: %URI{path: "/cgi-bin/ticket/getticket"}, adapter_storage: {adapter_storage, args}} = request
+       ) do
+
+    type = Keyword.get(request.query, :type)
+
+    appid = request.appid
+
+    case adapter_storage.fetch_ticket(appid, authorizer_appid, type, args) do
+      {:ok, ticket} ->
+        {
+          :cached,
+          %{
+            status: 200,
+            body: %{"errcode" => 0, "errmsg" => "ok", "ticket" => ticket},
+            headers: []
+          }
+        }
+
+      {:error, _} ->
+        {:cont, env, request}
+    end
+
+  end
+
+  defp try_use_from_cache(env, request) do
     {:cont, env, request}
   end
 
@@ -83,7 +101,6 @@ defmodule WeChat.Http.Middleware.Common do
 
     case adapter_storage.fetch_secret_key(appid, args) do
       {:ok, secret} ->
-
         prepared_query = [
           grant_type: "client_credential",
           appid: request.appid,
@@ -92,9 +109,12 @@ defmodule WeChat.Http.Middleware.Common do
 
         {Map.update!(env, :query, &Keyword.merge(&1, prepared_query)), request}
 
-      {:error, error} ->
-        Logger.error("fail to fetch secret_key for appid: #{inspect(appid)} occurs error: #{inspect(error)}")
-        raise "invalid config for appid: #{inspect(appid)}"
+      nil ->
+        Logger.error("not found secret_key for appid: #{inspect(appid)}")
+
+        prepared_query = [appid: request.appid]
+
+        {Map.update!(env, :query, &Keyword.merge(&1, prepared_query)), request}
     end
 
   end
@@ -133,8 +153,8 @@ defmodule WeChat.Http.Middleware.Common do
          } = request
        )
        when authorizer_appid != nil do
-    case fetch_access_token_by_component(appid, authorizer_appid, adapter_storage, args) do
-      access_token when is_bitstring(access_token) ->
+    case WeChat.Component.fetch_access_token(appid, authorizer_appid, {adapter_storage, args}) do
+      {:ok, %WeChat.Token{access_token: access_token}} when access_token != nil ->
         {Map.update!(env, :query, &Keyword.put(&1 || [], :access_token, access_token)), request}
 
       {:error, error} ->
@@ -280,6 +300,7 @@ defmodule WeChat.Http.Middleware.Common do
        when errcode == 40001
        when errcode == 42001
        when errcode == 40014 do
+    #
     # errcode from WeChat 40001/42001: expired access_token
     # errcode from WeChat 40014: invalid access_token
     #
@@ -326,137 +347,6 @@ defmodule WeChat.Http.Middleware.Common do
 
   defp rerun_when_token_expire(_env, _next, _request, _json_resp_body, _request_query) do
     :no_retry
-  end
-
-  defp fetch_access_token_by_component(appid, authorizer_appid, adapter_storage, args) do
-    case adapter_storage.fetch_access_token(appid, authorizer_appid, args) do
-      {:ok, %WeChat.Token{access_token: access_token}} when access_token != nil ->
-        access_token
-      {:ok, %WeChat.Token{access_token: nil, refresh_token: refresh_token}} when refresh_token != nil ->
-        refresh_or_refetch_token_to_refresh(appid, authorizer_appid, refresh_token, adapter_storage, args)
-      _ ->
-        find_and_refresh_access_token(appid, authorizer_appid, adapter_storage, args)
-    end
-  end
-
-  defp refresh_or_refetch_token_to_refresh(appid, authorizer_appid, authorizer_refresh_token, adapter_storage, args) do
-    refresh_result =
-      remote_refresh_authorizer_access_token(appid, authorizer_appid, authorizer_refresh_token, adapter_storage, args)
-
-    Logger.info(
-      ">>>> remote refresh authorizer_access_token result: #{inspect(refresh_result)} <<<<"
-    )
-
-    case refresh_result do
-      nil ->
-        find_and_refresh_access_token(appid, authorizer_appid, adapter_storage, args)
-
-      authorizer_access_token ->
-        authorizer_access_token
-    end
-  end
-
-  defp find_and_refresh_access_token(appid, authorizer_appid, adapter_storage, args) do
-    # The cached component refresh token is expired, rerun refresh token by authorizer list.
-    case remote_find_authorizer_refresh_token(appid, authorizer_appid, adapter_storage, args) do
-      {:ok, refresh_token} ->
-        Logger.info(
-          ">>> refresh_token: #{inspect(refresh_token)} from remote_find_authorizer_refresh_token"
-        )
-        remote_refresh_authorizer_access_token(appid, authorizer_appid, refresh_token, adapter_storage, args)
-      error ->
-        error
-    end
-  end
-
-  defp remote_refresh_authorizer_access_token(appid, authorizer_appid, authorizer_refresh_token, adapter_storage, args) do
-    data = %{
-      "authorizer_appid" => authorizer_appid,
-      "authorizer_refresh_token" => authorizer_refresh_token
-    }
-
-    Logger.info("data: #{inspect(data)}")
-
-    request_result =
-      WeChat.request(:post,
-        url: "/cgi-bin/component/api_authorizer_token",
-        body: data,
-        appid: appid,
-        adapter_storage: {adapter_storage, args}
-      )
-
-    Logger.info(
-      ">>>> remote_refresh_authorizer_access_token request_result: #{inspect(request_result)} <<<<"
-    )
-
-    case request_result do
-      {:ok, response} ->
-        Map.get(response.body, "authorizer_access_token")
-
-      {:error, error} ->
-        # errcode: 61023, invalid refresh_token
-        # try to refetch refresh_token, and then use it to refresh authorizer access_token
-        Logger.info(
-          "remote_refresh_authorizer_access_token occurs error: #{inspect(error)}, will try to refetch refresh_token and use it to refresh authorizer access_token"
-        )
-
-        nil
-    end
-  end
-
-  defp remote_find_authorizer_refresh_token(appid, authorizer_appid, adapter_storage, args, offset \\ 0, count \\ 500) do
-    request_result =
-      WeChat.request(:post,
-        appid: appid,
-        url: "/cgi-bin/component/api_get_authorizer_list",
-        body: %{"offset" => offset, "count" => count},
-        adapter_storage: {adapter_storage, args}
-      )
-
-    case request_result do
-      {:ok, response} ->
-        total_count = Map.get(response.body, "total_count")
-        Logger.info("remote get authorizer_list total_count: #{total_count}, offset: #{offset}")
-        list = Map.get(response.body, "list")
-
-        matched =
-          Enum.find(list, fn item ->
-            Map.get(item, "authorizer_appid") == authorizer_appid
-          end)
-
-        if matched != nil do
-          {:ok, Map.get(matched, "refresh_token")}
-        else
-          size_in_list = length(list)
-
-          if size_in_list == 0 or size_in_list == total_count do
-            Logger.error(
-              "not find matched authorizer_appid: #{authorizer_appid} in authorizer_list, please double check."
-            )
-            {:error, %Error{reason: :invalid_authorizer_appid}}
-          else
-            if offset + 1 < total_count do
-              remote_find_authorizer_refresh_token(
-                appid,
-                authorizer_appid,
-                adapter_storage,
-                args,
-                offset + size_in_list,
-                count
-              )
-            else
-              Logger.error(
-                "not find matched authorizer_appid: #{authorizer_appid} in authorizer_list, please double check."
-              )
-              {:error, %Error{reason: :invalid_authorizer_appid}}
-            end
-          end
-        end
-
-      {:error, error} ->
-        Logger.error("remote_find_authorizer_refresh_token error: #{inspect(error)}")
-        {:error, error}
-    end
   end
 
 end

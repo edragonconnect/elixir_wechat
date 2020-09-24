@@ -32,6 +32,7 @@ defmodule WeChat.MixProject do
       {:jason, "~> 1.1"},
       {:timex, "~> 3.6"},
       {:hackney, "~> 1.15.2"},
+      {:plug, "~> 1.10", optional: true},
       {:mock, "~> 0.3", only: :test},
       {:ex_doc, "~> 0.21", only: [:docs, :dev], runtime: false}
     ]

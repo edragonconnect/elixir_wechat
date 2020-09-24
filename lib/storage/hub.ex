@@ -76,7 +76,7 @@ defmodule WeChat.Storage.Hub do
   @doc """
   Fetch secret_key of WeChat common application.
   """
-  @callback fetch_secret_key(appid :: String.t(), args :: term()) :: {:ok, String.t()} | {:error, %WeChat.Error{}}
+  @callback fetch_secret_key(appid :: String.t(), args :: term()) :: {:ok, String.t()} | nil
 
   @doc """
   Fetch access_token of WeChat common application.
@@ -212,7 +212,7 @@ defmodule WeChat.Storage.ComponentHub do
   @doc """
   Get secret_key of WeChat component application.
   """
-  @callback fetch_secret_key(appid :: String.t(), args :: term()) :: {:ok, String.t()} | {:error, %WeChat.Error{}}
+  @callback fetch_secret_key(appid :: String.t(), args :: term()) :: {:ok, String.t()} | nil
 
   @doc """
   Get authorizer's access_token for WeChat component application.
@@ -245,7 +245,7 @@ defmodule WeChat.Storage.ComponentHub do
   Get access_token of WeChat component application.
   """
   @callback fetch_component_access_token(appid :: String.t(), args :: term()) ::
-    {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
+    {:ok, %WeChat.Token{}}
 
   @doc """
   Save access_token of WeChat component application.
