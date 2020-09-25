@@ -111,7 +111,6 @@ defmodule WeChat.Component do
 
   def fetch_access_token(appid, authorizer_appid, {adapter_storage, args}) do
     token = adapter_storage.fetch_access_token(appid, authorizer_appid, args)
-    Logger.info("fetch_access_token, token: #{inspect(token)}")
 
     case token do
       {:ok, %WeChat.Token{access_token: access_token}} when access_token != nil ->

@@ -262,11 +262,7 @@ defmodule WeChat.Http.Middleware.Component do
         {:error, error}
 
       {:ok, %WeChat.Token{access_token: component_access_token}}
-      when is_bitstring(component_access_token) ->
-        Logger.info(fn ->
-          "auto append component_access_token with: #{inspect(component_access_token)}"
-        end)
-
+        when is_bitstring(component_access_token) ->
         Map.update!(
           env,
           :query,
