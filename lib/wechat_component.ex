@@ -102,7 +102,7 @@ defmodule WeChat.Component do
   end
 
   @doc """
-  Fetch access token, when apply it to hub, there will use `refresh_token` to refresh another access token.
+  Fetch authorizer appid's access token, when apply it to hub, there will use `refresh_token` to refresh another access token.
   """
   def fetch_access_token(appid, authorizer_appid, adapter_storage)
       when is_atom(adapter_storage) and adapter_storage != nil do

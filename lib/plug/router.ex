@@ -1,5 +1,7 @@
 if Code.ensure_loaded?(Plug) do
   defmodule WeChat.Plug.Router do
+    @moduledoc false
+
     use Plug.Router
 
     alias WeChat.Plug.{FetchAccessToken, RefreshAccessToken, FetchComponentAccessToken}

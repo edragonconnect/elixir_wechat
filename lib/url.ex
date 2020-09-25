@@ -1,4 +1,6 @@
 defmodule WeChat.Url do
+  @moduledoc false
+
   def to_refresh_access_token() do
     "/refresh/access_token"
   end

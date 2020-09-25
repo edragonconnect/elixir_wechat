@@ -1,45 +1,44 @@
 defmodule WeChat.Storage.Adapter.DefaultClient do
-  @moduledoc """
-  When uses the `{:default, "MyHubBaseURL"}`, there requires some HTTP API functions are provided by the hub webapp server,
-  let's take "MyHubBaseURL" as "http://localhost:4000" for example.
+  @moduledoc false
+  # When uses the `{:default, "MyHubBaseURL"}`, there requires some HTTP API functions are provided by the hub webapp server,
+  # let's take "MyHubBaseURL" as "http://localhost:4000" for example.
 
-  ### Refresh access token
+  # ### Refresh access token
 
-  ```
-  Request
-  - method: POST http://localhost:4000/refresh/access_token
-  - body: %{"appid" => "MyAppID", "access_token" => "CurrentExpiryAccessToken"}
-  - body format: json
+  # ```
+  # Request
+  # - method: POST http://localhost:4000/refresh/access_token
+  # - body: %{"appid" => "MyAppID", "access_token" => "CurrentExpiryAccessToken"}
+  # - body format: json
 
-  Response
-  - success body: %{"access_token" => "..."}
-  - error body: any content is acceptable will be return back into `WeChat.Error`
-  ```
+  # Response
+  # - success body: %{"access_token" => "..."}
+  # - error body: any content is acceptable will be return back into `WeChat.Error`
+  # ```
 
-  ### Fetch access token
+  # ### Fetch access token
 
-  ```
-  Request
-  - method: GET http://localhost:4000/client/access_token
-  - query string: appid="MyAppID"
+  # ```
+  # Request
+  # - method: GET http://localhost:4000/client/access_token
+  # - query string: appid="MyAppID"
 
-  Response
-  - success body: %{"access_token" => "..."}
-  - error body: any error content is acceptable will be return back into `WeChat.Error`
-  ```
+  # Response
+  # - success body: %{"access_token" => "..."}
+  # - error body: any error content is acceptable will be return back into `WeChat.Error`
+  # ```
 
-  ### Fetch jsapi-ticket/card-ticket
+  # ### Fetch jsapi-ticket/card-ticket
 
-  ```
-  Request
-  - method: GET http://localhost:4000/client/ticket
-  - query string: appid="MyAppID"&type=jsapi or appid="MyAppID"&type=wx_card
+  # ```
+  # Request
+  # - method: GET http://localhost:4000/client/ticket
+  # - query string: appid="MyAppID"&type=jsapi or appid="MyAppID"&type=wx_card
 
-  Response
-  - success body: %{"ticket" => "..."}
-  - error body: any error content is acceptable will be return back into `WeChat.Error`
-  ```
-  """
+  # Response
+  # - success body: %{"ticket" => "..."}
+  # - error body: any error content is acceptable will be return back into `WeChat.Error`
+  # ```
 
   @behaviour WeChat.Storage.Client
 
@@ -64,46 +63,46 @@ defmodule WeChat.Storage.Adapter.DefaultClient do
 end
 
 defmodule WeChat.Storage.Adapter.DefaultComponentClient do
-  @moduledoc """
-  For `component` application
+  @moduledoc false
+  # For `component` application
 
-  ### Refresh authorizer access_token
+  # ### Refresh authorizer access_token
 
-  ```
-  Request
-  - method: POST http://localhost:4000/refresh/access_token
-  - body: %{"appid" => "Your3rdComponentAppID", "authorizer_appid" => "YourAuthorizerAppID", "access_token" => "CurrentExpiryAccessToken"}
-  - body format: json
+  # ```
+  # Request
+  # - method: POST http://localhost:4000/refresh/access_token
+  # - body: %{"appid" => "Your3rdComponentAppID", "authorizer_appid" => "YourAuthorizerAppID", "access_token" => "CurrentExpiryAccessToken"}
+  # - body format: json
 
-  Response
-  - success body: %{"access_token" => "..."}
-  - error body: any content is acceptable will be return back into `WeChat.Error`
-  ```
+  # Response
+  # - success body: %{"access_token" => "..."}
+  # - error body: any content is acceptable will be return back into `WeChat.Error`
+  # ```
 
-  ### Fetch access_token
+  # ### Fetch access_token
 
-  ```
-  Request
-  - method: GET http://localhost:4000/client/access_token
-  - query string: appid="MyAppID"
+  # ```
+  # Request
+  # - method: GET http://localhost:4000/client/access_token
+  # - query string: appid="MyAppID"
 
-  Response
-  - success body: %{"access_token" => "..."}
-  - error body: any error content is acceptable will be return back into `WeChat.Error`
-  ```
+  # Response
+  # - success body: %{"access_token" => "..."}
+  # - error body: any error content is acceptable will be return back into `WeChat.Error`
+  # ```
 
-  ### Fetch jsapi-ticket/card-ticket
+  # ### Fetch jsapi-ticket/card-ticket
 
-  ```
-  Request
-  - method: GET http://localhost:4000/client/ticket
-  - query string: appid="MyAppID"&type=jsapi or appid="MyAppID"&type=wx_card
+  # ```
+  # Request
+  # - method: GET http://localhost:4000/client/ticket
+  # - query string: appid="MyAppID"&type=jsapi or appid="MyAppID"&type=wx_card
 
-  Response
-  - success body: %{"ticket" => "..."}
-  - error body: any error content is acceptable will be return back into `WeChat.Error`
-  ```
-  """
+  # Response
+  # - success body: %{"ticket" => "..."}
+  # - error body: any error content is acceptable will be return back into `WeChat.Error`
+  # ```
+
   @behaviour WeChat.Storage.ComponentClient
 
   alias WeChat.Storage.DefaultHubConnector, as: Connector

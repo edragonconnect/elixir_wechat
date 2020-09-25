@@ -42,22 +42,45 @@ end
 
 ### Usage
 
-Let's invoke a detailed WeChat's API as example.
+First of all, let's add the built-in plug into the router of your server:
+
+```
+plug WeChat.Plug.Pipeline,
+  adapter_storage: [
+    component: WeChat.Storage.ComponentLocal,
+    common: WeChat.Storage.Local
+  ]
+```
+
+The `adapter_storage` option is required, according to your use case, you need to implement your `common` or `component` storage refer the corresponding behaviour, if your server need to cover both of them, just add them as the same time.
+
+After the above setup, there will add the following urls into your server for internal interactive, both of them are used to read/write cacheable data from the centralization nodes.
+
+```
+POST "/refresh/access_token"
+GET "/client/access_token"
+GET "/client/component_access_token"
+GET "/client/ticket"
+```
+
+For example, assume that the above setup server is runing as "http://localhost:4000", now let's invoke a detailed WeChat's API as an example from the `client` side.
 
 ```
 POST https://api.weixin.qq.com/cgi-bin/material/batchget_material
 
-QueryString: access_token="ACCESS_TOKEN"
+"Query Params":
+access_token="ACCESS_TOKEN"
 
-Body: {"type": "image", "offset": 0, "count": 10}
+"Body":
+{"type": "image", "offset": 0, "count": 10}
 ``` 
 
-#### As `common` application
+#### As `common` client application
 
 ```elixir
 defmodule MyClient do
   use WeChat,
-    adapter_storage: {:default, "MyHubBaseURL"},
+    adapter_storage: {:default, "http://localhost:4000"},
     appid: "MyAppID"
 end
 
@@ -74,19 +97,18 @@ Or use `WeChat.request/2` directly
 WeChat.request(
   :post,
   appid: "MyAppID",
-  adapter_storage: {:default, "MyHubBaseURL"},
+  adapter_storage: {:default, "http://localhost:4000"},
   url: "/cgi-bin/material/batchget_material",
   body: %{type: "image", offset: 0, count: 10}
 )
 ```
 
-
-#### As `component` application
+#### As `component` client application
 
 ```elixir
 defmodule MyComponentClient do
   use WeChat.Component,
-    adapter_storage: {:default, "MyHubBaseURL"},
+    adapter_storage: {:default, "http://localhost:4000"},
     appid: "MyAppID",
     authorizer_appid: "MyAuthorizerAppID"
 end
@@ -105,7 +127,7 @@ WeChat.request(
   :post,
   appid: "MyAppID",
   authorizer_appid: "MyAuthorizerAppID",
-  adapter_storage: {:default, "MyHubBaseURL"},
+  adapter_storage: {:default, "http://localhost:4000"},
   url: "/cgi-bin/material/batchget_material",
   body: %{type: "image", offset: 0, count: 10}
 )
@@ -113,7 +135,7 @@ WeChat.request(
 
 Please notice the `access_token` parameter will be automatically appended by this library, if `access_token` is expired when calling, there will retry refresh `access_token` from self-host centralization nodes, and then self-host centralization nodes will maintain the lifecycle of a fresh `access_token`.
 
-The default adapter storage `{:default, "MyHubBaseURL"}` is implemented as a client to the hub server(s) via some predefined HTTP API functions, the `WeChat.Storage.Adapter.DefaultClient` is used for `common` application, and the `WeChat.Storage.Adapter.DefaultComponentClient` is used for `component` application.
+The default adapter storage `{:default, "http://localhost:4000"}` is implemented as a client to the hub server(s) via some predefined HTTP API functions, the `WeChat.Storage.Adapter.DefaultClient` is used for `common` application, and the `WeChat.Storage.Adapter.DefaultComponentClient` is used for `component` application.
 
 In **general** use, you need to define your adapter storage implemented the corresponding behaviour, the aim of this design to adapt as much as you want.
 

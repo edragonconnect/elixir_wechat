@@ -28,14 +28,14 @@ defmodule WeChat do
       ```elixir
       defmodule MyClient do
         use WeChat,
-          adapter_storage: {:default, "MyHubBaseURL"}
+          adapter_storage: {:default, "http://localhost:4000"}
       end
 
       # the above equals the following
       #
       defmodule MyClient do
         use WeChat,
-          adapter_storage: {WeChat.Storage.Adapter.DefaultClient, "MyHubBaseURL"}
+          adapter_storage: {WeChat.Storage.Adapter.DefaultClient, "http://localhost:4000"}
       end
       ```
 
@@ -44,14 +44,14 @@ defmodule WeChat do
       ```elixir
       defmodule MyComponentClient do
         use WeChat.Component,
-          adapter_storage: {:default, "MyHubBaseURL"}
+          adapter_storage: {:default, "http://localhost:4000"}
       end
 
       # the above equals the following
       #
       defmodule MyComponentClient do
         use WeChat.Component,
-          adapter_storage: {WeChat.Storage.Adapter.DefaultComponentClient, "MyHubBaseURL"}
+          adapter_storage: {WeChat.Storage.Adapter.DefaultComponentClient, "http://localhost:4000"}
       end
       ```
 
@@ -62,7 +62,7 @@ defmodule WeChat do
   ```elixir
   defmodule MyClient do
     use WeChat,
-      adapter_storage: {:default, "MyHubBaseURL"},
+      adapter_storage: {:default, "http://localhost:4000"},
       appid: "MyAppID"
   end
 
@@ -74,11 +74,11 @@ defmodule WeChat do
 
   ```elixir
   WeChat.request(:post, url: "WeChatURL1",
-    appid: "MyAppID", adapter_storage: {:default, "MyHubBaseURL"},
+    appid: "MyAppID", adapter_storage: {:default, "http://localhost:4000"},
     body: %{}, query: [])
 
   WeChat.request(:get, url: "WeChatURL2",
-    appid: "MyAppID", adapter_storage: {:default, "MyHubBaseURL"},
+    appid: "MyAppID", adapter_storage: {:default, "http://localhost:4000"},
     query: [])
   ```
 
@@ -87,7 +87,7 @@ defmodule WeChat do
   ```elixir
   defmodule MyComponentClient do
     use WeChat.Component,
-      adapter_storage: {:default, "MyHubBaseURL"},
+      adapter_storage: {:default, "http://localhost:4000"},
       appid: "MyAppID",
       authorizer_appid: "MyAuthorizerAppID"
   end
@@ -101,11 +101,11 @@ defmodule WeChat do
   ```elixir
   WeChat.request(:post, url: "WeChatURL1",
     appid: "MyAppID", authorizer_appid: "MyAuthorizerAppID",
-    adapter_storage: {:default, "MyHubBaseURL"}, body: %{}, query: [])
+    adapter_storage: {:default, "http://localhost:4000"}, body: %{}, query: [])
 
   WeChat.request(:get, url: "WeChatURL2",
     appid: "MyAppID", authorizer_appid: "MyAuthorizerAppID",
-    adapter_storage: {:default, "MyHubBaseURL"}, query: [])
+    adapter_storage: {:default, "http://localhost:4000"}, query: [])
   ```
   """
 
@@ -141,6 +141,12 @@ defmodule WeChat do
     @moduledoc """
     A WeChat error expression.
     """
+    @type t :: %__MODULE__{
+            errcode: String.t(),
+            reason: atom(),
+            message: String.t(),
+            http_status: integer()
+          }
 
     @derive {Jason.Encoder, only: [:errcode, :message, :reason, :http_status]}
     defexception errcode: nil, message: nil, reason: nil, http_status: nil
@@ -350,6 +356,10 @@ defmodule WeChat do
     |> send_request()
   end
 
+  @doc """
+  Fetch common access token, when apply it to hub, there will use your account's `secret key`
+  to refresh another access token.
+  """
   def fetch_access_token(appid, adapter_storage) when is_atom(adapter_storage) do
     fetch_access_token(appid, {adapter_storage, nil})
   end

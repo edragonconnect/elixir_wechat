@@ -53,11 +53,6 @@ defmodule WeChat.MixProject do
            WeChat.Storage.ComponentClient,
            WeChat.Storage.ComponentHub
          ]},
-        {"Default Storage",
-         [
-           WeChat.Storage.Adapter.DefaultClient,
-           WeChat.Storage.Adapter.DefaultComponentClient
-         ]},
         {"Meta",
          [
            WeChat.CardSignature,
