@@ -16,14 +16,14 @@ if Code.ensure_loaded?(Plug) do
             {:ok, response} ->
               %{"ticket" => Map.get(response.body, "ticket")}
 
-            error ->
+            {:error, %WeChat.Error{} = error} ->
               Logger.error(
                 "get_ticket occur error: #{inspect(error)} with query_params: #{
                   inspect(query_params)
                 }"
               )
 
-              %{"error" => "invalid request"}
+              error
           end
         rescue
           error in WeChat.Error ->
@@ -65,7 +65,10 @@ if Code.ensure_loaded?(Plug) do
     end
 
     defp fetch(_, _) do
-      :invalid
+      {
+        :error,
+        %WeChat.Error{reason: :invalid_request}
+      }
     end
   end
 end

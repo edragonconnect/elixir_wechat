@@ -23,12 +23,12 @@ if Code.ensure_loaded?(Plug) do
           {:ok, token} ->
             %{"access_token" => token.access_token}
 
-          error ->
+          {:error, %WeChat.Error{} = error} ->
             Logger.error(
               "refresh token occurs an error: #{inspect(error)} with body: #{inspect(body)}"
             )
 
-            %{"error" => "invalid request"}
+            error
         end
 
       conn
@@ -55,7 +55,10 @@ if Code.ensure_loaded?(Plug) do
     end
 
     defp refresh(_, _) do
-      :invalid
+      {
+        :error,
+        %WeChat.Error{reason: :invalid_request}
+      }
     end
   end
 end
