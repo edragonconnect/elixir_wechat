@@ -1,3 +1,1 @@
-ExUnit.start()
-
-
+ExUnit.start(seed: 0)

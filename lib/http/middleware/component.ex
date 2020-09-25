@@ -3,300 +3,360 @@ defmodule WeChat.Http.Middleware.Component do
   @behaviour Tesla.Middleware
 
   alias WeChat.Http.Middleware.Common
-  alias WeChat.{Http, Error}
+  alias WeChat.{Error, Request, Utils}
 
   require Logger
 
-  def call(env, next, options) do
-    execute(env, next, options)
+  def call(env, next, request) do
+    execute(env, next, request)
   end
 
-  defp execute(env, next, options) do
-    try do
-      updated_env = populate_request(env, options)
-      response = Tesla.run(updated_env, next)
-      decode_response(response, updated_env, next, options)
-    rescue
-      error ->
+  defp execute(env, next, request) do
+    case prepare_request(env, request) do
+      {:error, error} ->
         {:error, error}
+
+      env ->
+        env
+        |> Tesla.run(next)
+        |> decode_response(env, next, request)
     end
   end
 
-  defp populate_request(env, options) do
+  defp prepare_request(env, request) do
     env
-    |> populate_component_access_token(options)
-    |> Common.encode_request(env.opts)
-  end
-
-  defp populate_component_access_token(env, options) do
-    populate_component_access_token(URI.parse(env.url), env, options)
+    |> populate_component_access_token(request)
+    |> Common.encode_request()
   end
 
   defp populate_component_access_token(
-         %URI{path: "/cgi-bin/component/api_component_token"} = _uri,
          env,
-         options
+         %Request{
+           uri: %URI{path: "/sns/oauth2/component/access_token"},
+           authorizer_appid: authorizer_appid,
+           appid: appid
+         } = request
        ) do
-    credential = Http.grep_credential(options)
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
 
-    updated_body =
-      env.body
-      |> populate_required_into_body([:component_verify_ticket])
-      |> Map.put(:component_appid, credential.appid)
-      |> Map.put(:component_appsecret, credential.secret)
+      env ->
+        query = Keyword.merge([appid: authorizer_appid, component_appid: appid], env.query)
 
-    Map.put(env, :body, updated_body)
-  end
-
-  defp populate_component_access_token(
-         %URI{path: "/cgi-bin/component/api_create_preauthcode"} = _uri,
-         env,
-         options
-       ) do
-    credential = Http.grep_credential(options)
-    updated_env = append_component_access_token(env, options)
-
-    updated_body = populate_required_into_body(env.body, [], %{component_appid: credential.appid})
-
-    Map.put(updated_env, :body, updated_body)
-  end
-
-  defp populate_component_access_token(
-         %URI{path: "/cgi-bin/component/api_query_auth"} = _uri,
-         env,
-         options
-       ) do
-    credential = Http.grep_credential(options)
-    updated_env = append_component_access_token(env, options)
-
-    updated_body =
-      populate_required_into_body(env.body, [:authorization_code], %{
-        component_appid: credential.appid
-      })
-
-    Map.put(updated_env, :body, updated_body)
-  end
-
-  defp populate_component_access_token(
-         %URI{path: "/cgi-bin/component/api_authorizer_token"} = _uri,
-         env,
-         options
-       ) do
-    credential = Http.grep_credential(options)
-    updated_env = append_component_access_token(env, options)
-
-    updated_body =
-      populate_required_into_body(env.body, [:authorizer_appid, :authorizer_refresh_token], %{
-        component_appid: credential.appid
-      })
-
-    Map.put(updated_env, :body, updated_body)
-  end
-
-  defp populate_component_access_token(
-         %URI{path: "/cgi-bin/component/api_get_authorizer_info"} = _uri,
-         env,
-         options
-       ) do
-    credential = Http.grep_credential(options)
-    updated_env = append_component_access_token(env, options)
-
-    updated_body =
-      populate_required_into_body(env.body, [:authorizer_appid], %{
-        component_appid: credential.appid
-      })
-
-    Map.put(updated_env, :body, updated_body)
-  end
-
-  defp populate_component_access_token(
-         %URI{path: "/cgi-bin/component/api_get_authorizer_option"} = _uri,
-         env,
-         options
-       ) do
-    credential = Http.grep_credential(options)
-    updated_env = append_component_access_token(env, options)
-
-    updated_body =
-      populate_required_into_body(env.body, [:authorizer_appid, :option_name], %{
-        component_appid: credential.appid
-      })
-
-    Map.put(updated_env, :body, updated_body)
-  end
-
-  defp populate_component_access_token(
-         %URI{path: "/cgi-bin/component/api_set_authorizer_option"} = _uri,
-         env,
-         options
-       ) do
-    credential = Http.grep_credential(options)
-    updated_env = append_component_access_token(env, options)
-
-    updated_body =
-      populate_required_into_body(env.body, [:authorizer_appid, :option_name, :option_value], %{
-        component_appid: credential.appid
-      })
-
-    Map.put(updated_env, :body, updated_body)
-  end
-
-  defp populate_component_access_token(
-         %URI{path: "/cgi-bin/component/api_get_authorizer_list"} = _uri,
-         env,
-         options
-       ) do
-    credential = Http.grep_credential(options)
-    updated_env = append_component_access_token(env, options)
-
-    updated_body =
-      populate_required_into_body(env.body, [:offset, :count], %{
-        component_appid: credential.appid
-      })
-
-    Map.put(updated_env, :body, updated_body)
-  end
-
-  defp populate_component_access_token(_uri, env, options) do
-    append_component_access_token(env, options)
-  end
-
-  defp append_component_access_token(env, options) do
-    fresh_component_access_token = Keyword.get(options, :fresh_component_access_token)
-
-    required =
-      if fresh_component_access_token == nil do
-        wechat_component_module = Keyword.get(options, :module)
-        component_access_token =
-          cond do
-            function_exported?(wechat_component_module, :get_component_access_token, 1) ->
-              apply(wechat_component_module, :get_component_access_token, [Http.grep_appid(options)])
-            true ->
-              apply(wechat_component_module, :get_component_access_token, [])
-          end
-        Logger.info ">>> auto append_component_access_token wechat_component_module: #{inspect wechat_component_module}"
-        Logger.info ">>> auto append_component_access_token component_access_token: #{inspect component_access_token}"
-        [component_access_token: component_access_token]
-      else
-        Logger.info ">>> auto append_component_access_token using the latest refreshed component_access_token: #{inspect fresh_component_access_token}"
-        [component_access_token: fresh_component_access_token]
-      end
-    Map.update!(env, :query, &(Keyword.merge(&1, required)))
-  end
-
-  defp decode_response({:ok, response}, init_env, next, options) do
-    Logger.info(">>> decode_response for component: #{inspect response}")
-
-    initial = %{
-      status: response.status,
-      headers: response.headers,
-      body: ""
-    }
-
-    if response.body != "" do
-      response_body = Jason.decode!(response.body)
-      request_query = init_env.query
-      Logger.info ">>> response_body: #{inspect response_body}, request_query: #{inspect request_query}"
-      case rerun_when_token_expire(init_env, next, options, response_body, request_query) do
-        :ok ->
-          request_body = init_env.body
-          prepared_request_body =
-            if is_bitstring(request_body) do
-              Jason.decode!(request_body)
-            else
-              request_body
-            end
-          Logger.info ">>> prepared_request_body: #{inspect prepared_request_body}"
-          reserve_access_token(URI.parse(response.url), response_body, options, prepared_request_body)
-          {:ok, %{initial | body: response_body}}
-        retry_result ->
-          retry_result
-      end
-    else
-      {:error, %Error{reason: :unknown, message: "response body is empty, http status code: #{inspect(response.status)}"}}
+        {
+          Map.put(env, :query, query),
+          request
+        }
     end
   end
 
-  defp decode_response({:error, reason}, _init_env, _next, _options) do
-    Logger.error "occurs error when decode response with reason: #{inspect(reason)}"
+  defp populate_component_access_token(
+         env,
+         %Request{
+           uri: %URI{path: "/cgi-bin/component/api_component_token"},
+           appid: appid,
+           adapter_storage: {adapter_storage, args}
+         } = request
+       ) do
+    case adapter_storage.fetch_secret_key(appid, args) do
+      {:ok, secret} ->
+        body =
+          env.body
+          |> populate_required_into_body([:component_verify_ticket])
+          |> Map.put(:component_appid, request.appid)
+          |> Map.put(:component_appsecret, secret)
+
+        {
+          Map.put(env, :body, body),
+          request
+        }
+
+      nil ->
+        Logger.error("not found secret_key for appid: #{inspect(appid)}")
+
+        raise %Error{
+          reason: :invalid_config,
+          message: "not found secret_key for appid: #{inspect(appid)}"
+        }
+    end
+  end
+
+  defp populate_component_access_token(
+         env,
+         %Request{uri: %URI{path: "/cgi-bin/component/api_create_preauthcode"}, appid: appid} =
+           request
+       ) do
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+
+      env ->
+        body = populate_required_into_body(env.body, [], %{component_appid: appid})
+
+        {
+          Map.put(env, :body, body),
+          request
+        }
+    end
+  end
+
+  defp populate_component_access_token(
+         env,
+         %Request{uri: %URI{path: "/cgi-bin/component/api_query_auth"}, appid: appid} = request
+       ) do
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+
+      env ->
+        body =
+          populate_required_into_body(env.body, [:authorization_code], %{component_appid: appid})
+
+        {
+          Map.put(env, :body, body),
+          request
+        }
+    end
+  end
+
+  defp populate_component_access_token(
+         env,
+         %Request{uri: %URI{path: "/cgi-bin/component/api_authorizer_token"}, appid: appid} =
+           request
+       ) do
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+
+      env ->
+        body =
+          populate_required_into_body(env.body, [:authorizer_appid, :authorizer_refresh_token], %{
+            component_appid: appid
+          })
+
+        {
+          Map.put(env, :body, body),
+          request
+        }
+    end
+  end
+
+  defp populate_component_access_token(
+         env,
+         %Request{uri: %URI{path: "/cgi-bin/component/api_get_authorizer_info"}, appid: appid} =
+           request
+       ) do
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+
+      env ->
+        body =
+          populate_required_into_body(env.body, [:authorizer_appid], %{component_appid: appid})
+
+        {
+          Map.put(env, :body, body),
+          request
+        }
+    end
+  end
+
+  defp populate_component_access_token(
+         env,
+         %Request{uri: %URI{path: "/cgi-bin/component/api_get_authorizer_option"}, appid: appid} =
+           request
+       ) do
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+
+      env ->
+        body =
+          populate_required_into_body(env.body, [:authorizer_appid, :option_name], %{
+            component_appid: appid
+          })
+
+        {
+          Map.put(env, :body, body),
+          request
+        }
+    end
+  end
+
+  defp populate_component_access_token(
+         env,
+         %Request{uri: %URI{path: "/cgi-bin/component/api_set_authorizer_option"}, appid: appid} =
+           request
+       ) do
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+
+      env ->
+        body =
+          populate_required_into_body(
+            env.body,
+            [:authorizer_appid, :option_name, :option_value],
+            %{
+              component_appid: appid
+            }
+          )
+
+        {
+          Map.put(env, :body, body),
+          request
+        }
+    end
+  end
+
+  defp populate_component_access_token(
+         env,
+         %Request{uri: %URI{path: "/cgi-bin/component/api_get_authorizer_list"}, appid: appid} =
+           request
+       ) do
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+
+      env ->
+        body = populate_required_into_body(env.body, [:offset, :count], %{component_appid: appid})
+
+        {
+          Map.put(env, :body, body),
+          request
+        }
+    end
+  end
+
+  defp populate_component_access_token(env, request) do
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+
+      env ->
+        {env, request}
+    end
+  end
+
+  defp append_component_access_token(env, %Request{access_token: component_access_token})
+       when component_access_token != nil do
+    Logger.info(fn ->
+      "auto append component_access_token using the latest re-freshed component_access_token: #{
+        inspect(component_access_token)
+      }"
+    end)
+
+    Map.update!(
+      env,
+      :query,
+      &Keyword.put(&1 || [], :component_access_token, component_access_token)
+    )
+  end
+
+  defp append_component_access_token(env, %Request{adapter_storage: adapter_storage, appid: appid}) do
+    result = WeChat.Component.fetch_component_access_token(appid, adapter_storage)
+
+    case result do
+      {:error, error} ->
+        {:error, error}
+
+      {:ok, %WeChat.Token{access_token: component_access_token}}
+        when is_bitstring(component_access_token) ->
+        Map.update!(
+          env,
+          :query,
+          &Keyword.put(&1 || [], :component_access_token, component_access_token)
+        )
+    end
+  end
+
+  defp decode_response({:ok, %{body: body} = response}, env, next, request)
+       when body != "" and body != nil do
+    case rerun_when_token_expire(env, next, request, response) do
+      {:no_retry, json_resp_body} ->
+        sync_to_storage_cache(json_resp_body, request)
+
+        {
+          :ok,
+          %{
+            status: response.status,
+            headers: response.headers,
+            body: json_resp_body
+          }
+        }
+
+      {retry_result, _} ->
+        retry_result
+    end
+  end
+
+  defp decode_response({:ok, %{body: body} = response}, _env, _next, _request)
+       when body == "" or body == nil do
+    {:error,
+     %Error{reason: :unknown, message: "response body is empty", http_status: response.status}}
+  end
+
+  defp decode_response({:error, reason}, _env, _next, _request) do
+    Logger.error("occurs error when decode response with reason: #{inspect(reason)}")
     {:error, %Error{reason: reason}}
   end
 
-  defp reserve_access_token(
-         %URI{path: "/cgi-bin/component/api_query_auth"},
-         response_body,
-         options,
-         _request_body
-       ) do
-    access_token = Map.get(response_body, "authorizer_access_token")
-    expires_in = Map.get(response_body, "expires_in")
+  defp sync_to_storage_cache(
+         %{"authorizer_access_token" => access_token, "expires_in" => expires_in} = response,
+         %Request{
+           uri: %URI{path: "/cgi-bin/component/api_query_auth"},
+           adapter_storage: {adapter_storage, args},
+           appid: appid,
+           authorizer_appid: authorizer_appid
+         }
+       )
+       when access_token != nil and expires_in != nil do
+    authorizer_refresh_token = Map.get(response, "authorizer_refresh_token")
 
-    if access_token != nil and expires_in != nil do
-      wechat_module = Keyword.get(options, :module)
-
-      updated_response_body = %{
-        "access_token" => access_token,
-        "authorizer_appid" => Map.get(response_body, "authorizer_appid"),
-        "authorizer_refresh_token" => Map.get(response_body, "authorizer_refresh_token"),
-        "expires_in" => expires_in
-      }
-
-      apply(wechat_module, :set_access_token, [updated_response_body, options])
-    end
+    adapter_storage.save_access_token(
+      appid,
+      authorizer_appid,
+      access_token,
+      authorizer_refresh_token,
+      args
+    )
   end
 
-  defp reserve_access_token(
-         %URI{path: "/cgi-bin/component/api_authorizer_token"},
-         response_body,
-         options,
-         request_body
-       ) do
-    Logger.info ">>>> reserve_access_token <<<<"
-    Logger.info "response_body: #{inspect response_body}, request_body: #{inspect request_body}"
-    access_token = Map.get(response_body, "authorizer_access_token")
-    expires_in = Map.get(response_body, "expires_in")
+  defp sync_to_storage_cache(
+         %{"authorizer_access_token" => access_token, "expires_in" => expires_in} = response,
+         %Request{
+           uri: %URI{path: "/cgi-bin/component/api_authorizer_token"},
+           adapter_storage: {adapter_storage, args},
+           appid: appid,
+           authorizer_appid: authorizer_appid
+         }
+       )
+       when access_token != nil and expires_in != nil do
+    authorizer_refresh_token = Map.get(response, "authorizer_refresh_token")
 
-    if access_token != nil and expires_in != nil do
-      wechat_module = Keyword.get(options, :module)
-
-      authorizer_appid = 
-        Map.get_lazy(request_body, "authorizer_appid", fn ->
-          Map.get(request_body, :authorizer_appid)
-        end)
-      Logger.info "authorizer_appid: #{inspect authorizer_appid}"
-      updated_response_body = %{
-        "access_token" => access_token,
-        "authorizer_appid" => authorizer_appid,
-        "authorizer_refresh_token" => Map.get(response_body, "authorizer_refresh_token"),
-        "expires_in" => expires_in
-      }
-      appid = Http.grep_appid(options)
-      apply(wechat_module, :set_access_token, [appid, updated_response_body, options])
-    end
+    adapter_storage.save_access_token(
+      appid,
+      authorizer_appid,
+      access_token,
+      authorizer_refresh_token,
+      args
+    )
   end
 
-  defp reserve_access_token(
-         %URI{path: "/cgi-bin/component/api_component_token"},
-         response_body,
-         options,
-         _request_body
-       ) do
-    component_access_token = Map.get(response_body, "component_access_token")
-    expires_in = Map.get(response_body, "expires_in")
-
-    if component_access_token != nil and expires_in != nil do
-      wechat_module = Keyword.get(options, :module)
-
-      updated_response_body = %{
-        "component_access_token" => component_access_token,
-        "expires_in" => expires_in
-      }
-      appid = Http.grep_appid(options)
-      apply(wechat_module, :set_component_access_token, [appid, updated_response_body, options])
-    end
+  defp sync_to_storage_cache(
+         %{"component_access_token" => component_access_token, "expires_in" => expires_in},
+         %Request{
+           uri: %URI{path: "/cgi-bin/component/api_component_token"},
+           adapter_storage: {adapter_storage, args},
+           appid: appid
+         }
+       )
+       when component_access_token != nil and expires_in != nil do
+    adapter_storage.save_component_access_token(appid, component_access_token, args)
   end
 
-  defp reserve_access_token(_uri, _response_body, _options, _request_body) do
+  defp sync_to_storage_cache(_json_resp_body, _request) do
     :ok
   end
 
@@ -308,7 +368,7 @@ defmodule WeChat.Http.Middleware.Component do
   end
 
   defp populate_required_into_body(body, [], prepared) when is_map(prepared) and is_map(body) do
-    Map.merge(body, prepared)
+    prepared
   end
 
   defp populate_required_into_body(nil, [], prepared) when is_map(prepared) do
@@ -316,93 +376,169 @@ defmodule WeChat.Http.Middleware.Component do
   end
 
   defp populate_required_into_body(body, [], prepared) when is_map(prepared) do
-    raise "invalid body: #{inspect(body)} while process required fields"
+    raise %Error{
+      reason: :invalid_request,
+      message: "http body: #{inspect(body)} is invalid"
+    }
   end
 
   defp populate_required_into_body(body, [current_field | rest_fields], prepared)
-       when is_map(prepared) and is_map(body) do
-    cond do
-      is_bitstring(current_field) ->
-        current_field_atom = String.to_atom(current_field)
+       when is_map(prepared) and is_map(body) and is_bitstring(current_field) do
+    current_field_atom = String.to_atom(current_field)
 
-        value =
-          Map.get_lazy(body, current_field, fn ->
-            Map.get(body, current_field_atom)
-          end)
+    value =
+      Map.get_lazy(body, current_field, fn ->
+        Map.get(body, current_field_atom)
+      end)
 
-        updated = Map.put(prepared, current_field_atom, value)
-        populate_required_into_body(body, rest_fields, updated)
+    updated = Map.put(prepared, current_field_atom, value)
+    populate_required_into_body(body, rest_fields, updated)
+  end
 
-      is_atom(current_field) ->
-        value =
-          Map.get_lazy(body, current_field, fn ->
-            Map.get(body, to_string(current_field))
-          end)
+  defp populate_required_into_body(body, [current_field | rest_fields], prepared)
+       when is_map(prepared) and is_map(body) and is_atom(current_field) do
+    value =
+      Map.get_lazy(body, current_field, fn ->
+        Map.get(body, to_string(current_field))
+      end)
 
-        updated = Map.put(prepared, current_field, value)
-        populate_required_into_body(body, rest_fields, updated)
-
-      true ->
-        raise "invalid field: #{inspect(current_field)} in body"
-    end
+    updated = Map.put(prepared, current_field, value)
+    populate_required_into_body(body, rest_fields, updated)
   end
 
   defp populate_required_into_body(body, [current_field | _rest_fields], prepared)
+       when is_map(prepared) and is_bitstring(body) and is_bitstring(current_field) do
+    updated = Map.put(prepared, String.to_atom(current_field), body)
+    populate_required_into_body(body, [], updated)
+  end
+
+  defp populate_required_into_body(body, [current_field | _rest_fields], prepared)
+       when is_map(prepared) and is_bitstring(body) and is_atom(current_field) do
+    updated = Map.put(prepared, current_field, body)
+    populate_required_into_body(body, [], updated)
+  end
+
+  defp populate_required_into_body(body, [current_field | _rest_fields], prepared)
+       when is_map(prepared) and is_map(body)
        when is_map(prepared) and is_bitstring(body) do
-    cond do
-      is_bitstring(current_field) ->
-        updated = Map.put(prepared, String.to_atom(current_field), body)
-        populate_required_into_body(body, [], updated)
-
-      is_atom(current_field) ->
-        updated = Map.put(prepared, current_field, body)
-        populate_required_into_body(body, [], updated)
-
-      true ->
-        raise "invalid field: #{inspect(current_field)} in body"
-    end
+    raise %Error{
+      reason: :invalid_request,
+      message: "invalid field: #{inspect(current_field)} from request body"
+    }
   end
 
   defp populate_required_into_body(nil, fields, prepared)
-       when is_map(prepared) and length(fields) > 0 do
+       when is_map(prepared) and is_list(fields) and fields != [] do
     prepared
   end
 
   defp populate_required_into_body(body, fields, prepared)
-       when is_map(prepared) and length(fields) > 0 do
-    raise "invalid body: #{inspect(body)} while process required fields"
+       when is_map(prepared) and is_list(fields) and fields != [] do
+    raise %Error{
+      reason: :invalid_request,
+      message: "invalid request body: #{inspect(body)}"
+    }
   end
 
-  defp rerun_when_token_expire(env, next, options, response_result, request_query) do
-    errcode = Map.get(response_result, "errcode")
-    cond do
-      errcode in [40001, 42001] ->
-        wechat_appid = Http.grep_appid(options)
-        wechat_module = Keyword.get(options, :module)
-        Logger.info "when invoke wechat component apis occurs expired component_access_token for wechat_appid: #{wechat_appid}, will refresh to fetch a new component_access_token"
-        new_component_access_token =
-          if function_exported?(wechat_module, :refresh_component_access_token, 2) == true do
-            apply(wechat_module, :refresh_component_access_token, [wechat_appid, Keyword.merge(options, request_query)])
-          else
-            apply(wechat_module, :refresh_component_access_token, [Keyword.merge(options, request_query)])
-          end
-        updated_options = Keyword.put(options, :fresh_component_access_token, new_component_access_token)
-        execute(env, next, updated_options)
-      errcode in [61005, 61006] ->
-        wechat_appid = Http.grep_appid(options)
-        Logger.error "component_verify_ticket of appid: #{wechat_appid} is expired or invalid (errcode: #{errcode}), please re-auth or update verify_ticket"
-        {:error, %Error{reason: :invalid_component_verify_ticket, errcode: errcode, message: Map.get(response_result, "errmsg")}}
-      errcode == 61023 ->
-        wechat_appid = Http.grep_appid(options)
-        Logger.info "refresh_token of appid: #{wechat_appid} is invalid, will retry fetch, env: #{inspect env}"
-        {:error, %Error{reason: :invalid_component_refresh_token, errcode: errcode, message: Map.get(response_result, "errmsg")}}
-      errcode == 61004 ->
-        wechat_appid = Http.grep_appid(options)
-        Logger.error "clientip is not in whitelist of appid: #{wechat_appid}"
-        {:error, %Error{reason: :invalid_clientip, errcode: errcode, message: Map.get(response_result, "errmsg")}}
-      true ->
-        :ok
+  defp rerun_when_token_expire(env, next, request, %{body: body} = response) do
+    json_resp_body = Utils.json_decode(body)
+    result = rerun_when_token_expire(env, next, request, json_resp_body, response.query)
+    {result, json_resp_body}
+  end
+
+  defp rerun_when_token_expire(
+         env,
+         next,
+         %Request{appid: appid, adapter_storage: {adapter_storage, args}} = request,
+         %{"errcode" => errcode},
+         request_query
+       )
+       when errcode == 40001
+       when errcode == 42001 do
+    Logger.info(
+      "when invoke wechat component apis occurs expired component_access_token for wechat appid: #{
+        appid
+      }, will refresh to fetch a new component_access_token"
+    )
+
+    refresh_result =
+      adapter_storage.refresh_component_access_token(
+        appid,
+        request_query[:component_access_token],
+        args
+      )
+
+    case refresh_result do
+      {:ok, %WeChat.Token{access_token: new_component_access_token}}
+      when new_component_access_token != nil ->
+        request = Map.put(request, :access_token, new_component_access_token)
+        execute(env, next, request)
+
+      {:error, error} ->
+        {:error, error}
     end
   end
 
+  defp rerun_when_token_expire(
+         _env,
+         _next,
+         %Request{appid: appid},
+         %{"errcode" => errcode} = json_resp_body,
+         _request_query
+       )
+       when errcode == 61005
+       when errcode == 61006 do
+    Logger.error(
+      "component_verify_ticket of appid: #{appid} is expired or invalid (errcode: #{errcode}), please re-auth to update verify_ticket"
+    )
+
+    {:error,
+     %Error{
+       reason: :invalid_component_verify_ticket,
+       errcode: errcode,
+       message: Map.get(json_resp_body, "errmsg")
+     }}
+  end
+
+  defp rerun_when_token_expire(
+         env,
+         _next,
+         %Request{appid: appid},
+         %{"errcode" => errcode} = json_resp_body,
+         _request_query
+       )
+       when errcode == 61023 do
+    Logger.info(
+      "refresh_token of appid: #{appid} is invalid, will retry fetch, env: #{inspect(env)}"
+    )
+
+    {:error,
+     %Error{
+       reason: :invalid_component_refresh_token,
+       errcode: errcode,
+       message: Map.get(json_resp_body, "errmsg")
+     }}
+  end
+
+  defp rerun_when_token_expire(
+         _env,
+         _next,
+         %Request{appid: appid},
+         %{"errcode" => errcode} = json_resp_body,
+         _request_query
+       )
+       when errcode == 61004 do
+    Logger.error("clientip is not in whitelist of appid: #{appid}")
+
+    {:error,
+     %Error{
+       reason: :invalid_clientip,
+       errcode: errcode,
+       message: Map.get(json_resp_body, "errmsg")
+     }}
+  end
+
+  defp rerun_when_token_expire(_env, _next, _request, _json_resp_body, _request_query) do
+    :no_retry
+  end
 end

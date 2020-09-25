@@ -4,14 +4,14 @@ defmodule WeChat.MixProject do
   def project do
     [
       app: :elixir_wechat,
-      version: "0.1.4",
-      elixir: "~> 1.7",
+      version: "0.2.0",
+      elixir: "~> 1.9",
       start_permanent: Mix.env() == :prod,
-      elixirc_paths: elixirc_paths(Mix.env),
+      elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
       docs: docs(),
       description: description(),
-      package: package(),
+      package: package()
     ]
   end
 
@@ -23,18 +23,18 @@ defmodule WeChat.MixProject do
   end
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(:docs), do: ["lib", "priv/guide"]
   defp elixirc_paths(_), do: ["lib"]
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ex_doc, "~> 0.21", only: [:docs, :dev], runtime: false},
-      {:toml, "~> 0.6"},
       {:tesla, "~> 1.3"},
       {:jason, "~> 1.1"},
       {:timex, "~> 3.6"},
+      {:hackney, "~> 1.15.2"},
+      {:plug, "~> 1.10", optional: true},
       {:mock, "~> 0.3", only: :test},
+      {:ex_doc, "~> 0.21", only: [:docs, :dev], runtime: false}
     ]
   end
 
@@ -46,28 +46,25 @@ defmodule WeChat.MixProject do
         "README.md"
       ],
       groups_for_modules: [
-        BeHaviour: [
-          WeChat.Adapter.Storage.Client,
-          WeChat.Adapter.Storage.ComponentClient,
-          WeChat.Adapter.Storage.Hub,
-          WeChat.Adapter.Storage.ComponentHub,
-        ],
-        "Guide - Common": [
-          DynamicAppIdClient,
-          DynamicAppIdHubClient,
-          GlobalAppIdClient,
-          GlobalAppIdHubClient,
-        ],
-        "Guide - Component": [
-          DynamicComponentAppIdClient,
-          DynamicComponentAppIdHubClient,
-          GlobalComponentAppIdClient,
-          GlobalComponentAppIdHubClient
-        ],
-        Upload: [
-          WeChat.UploadMedia,
-          WeChat.UploadMediaContent
-        ]
+        {"BeHaviour",
+         [
+           WeChat.Storage.Client,
+           WeChat.Storage.Hub,
+           WeChat.Storage.ComponentClient,
+           WeChat.Storage.ComponentHub
+         ]},
+        {"Meta",
+         [
+           WeChat.CardSignature,
+           WeChat.JSSDKSignature,
+           WeChat.Token,
+           WeChat.Error
+         ]},
+        {"Meta Upload",
+         [
+           WeChat.UploadMedia,
+           WeChat.UploadMediaContent
+         ]}
       ]
     ]
   end
