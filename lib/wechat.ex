@@ -118,7 +118,7 @@ defmodule WeChat do
     default_opts =
       opts
       |> Macro.prewalk(&Macro.expand(&1, __CALLER__))
-      |> Keyword.take([:adapter_storage, :appid, :authorizer_appid])
+      |> Keyword.take([:adapter_storage, :appid, :authorizer_appid, :scenario])
 
     quote do
       def default_opts, do: unquote(default_opts)
@@ -177,7 +177,8 @@ defmodule WeChat do
             body: body(),
             query: keyword(),
             opts: keyword(),
-            access_token: String.t()
+            access_token: String.t(),
+            scenario: :hub | nil,
           }
 
     defstruct [
@@ -189,7 +190,8 @@ defmodule WeChat do
       :body,
       :query,
       :opts,
-      :access_token
+      :access_token,
+      :scenario
     ]
   end
 
@@ -391,7 +393,8 @@ defmodule WeChat do
       body: options[:body],
       query: query,
       opts: options[:opts],
-      adapter_storage: options[:adapter_storage]
+      adapter_storage: options[:adapter_storage],
+      scenario: options[:scenario]
     }
   end
 

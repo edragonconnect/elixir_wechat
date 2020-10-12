@@ -65,6 +65,7 @@ defmodule WeChat.Http.Middleware.Common do
            adapter_storage: {adapter_storage, args}
          } = request
        ) do
+
     type = Keyword.get(request.query, :type)
 
     appid = request.appid
@@ -248,6 +249,19 @@ defmodule WeChat.Http.Middleware.Common do
          }
        ) do
     adapter_storage.save_access_token(appid, access_token, args)
+  end
+
+  defp sync_to_storage_cache(
+         _json_resp_body,
+         %Request{
+           uri: %URI{path: "/cgi-bin/ticket/getticket"},
+           scenario: scenario
+         }
+       ) when scenario != :hub do
+    # ignore ticket storage in non-hub scenario,
+    # actually, ticket is fetched from the hub when
+    # call "/cgi-bin/ticket/getticket" request in a client.
+    :ok
   end
 
   defp sync_to_storage_cache(

@@ -48,7 +48,8 @@ if Code.ensure_loaded?(Plug) do
         authorizer_appid: authorizer_appid,
         query: [type: ticket_type],
         url: "/cgi-bin/ticket/getticket",
-        adapter_storage: comp_adapter_storage
+        adapter_storage: comp_adapter_storage,
+        scenario: :hub
       )
     end
 
@@ -60,7 +61,8 @@ if Code.ensure_loaded?(Plug) do
         appid: appid,
         query: [type: ticket_type],
         url: "/cgi-bin/ticket/getticket",
-        adapter_storage: common_adapter_storage
+        adapter_storage: common_adapter_storage,
+        scenario: :hub
       )
     end
 

@@ -4,7 +4,7 @@ if Code.ensure_loaded?(Plug) do
 
     use Plug.Router
 
-    alias WeChat.Plug.{FetchAccessToken, RefreshAccessToken, FetchComponentAccessToken}
+    alias WeChat.Plug.{FetchAccessToken, RefreshAccessToken, FetchComponentAccessToken, FetchTicket}
 
     alias WeChat.Url
 
