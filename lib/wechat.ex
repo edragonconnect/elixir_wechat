@@ -4,23 +4,23 @@ defmodule WeChat do
 
   Currently, there are two ways to use the WeChat's APIs:
 
-    * As `common` application, directly integrates WeChat's APIs after trun on your WeChat Official Account into the developer mode ([see details](https://developers.weixin.qq.com/doc/offiaccount/en/Basic_Information/Access_Overview.html){:target="_blank"});
+    * As `common` application, directly integrates WeChat's APIs after turn on your WeChat Official Account into the developer mode ([see details](https://developers.weixin.qq.com/doc/offiaccount/en/Basic_Information/Access_Overview.html){:target="_blank"});
     * As `component` application, authorizes your WeChat Official Account to the WeChat Official Account third-party platform application, leverages a set of common solutions from the third-party platform ([see details](https://developers.weixin.qq.com/doc/oplatform/en/Third-party_Platforms/Third_party_platform_appid.html){:target="_blank"}).
 
   Refer the official document's recommend to manage access token ([see details](https://developers.weixin.qq.com/doc/offiaccount/en/Basic_Information/Get_access_token.html){:target="_blank"}), we need to
   temporarily storage access token in a centralization way, we prepare four behaviours to manage the minimum responsibilities for each use case.
 
-  Use this library in the 3rd-party webapp which can read the temporary storage data (e.g. access token/jsapi-ticket/card-ticket) from the centralization nodes(hereinafter "hub"):
+  Use this library in the 3rd-party web app which can read the temporary storage data (e.g. access token/jsapi-ticket/card-ticket) from the centralization nodes(hereinafter "hub"):
 
     * The `WeChat.Storage.Client` storage adapter behaviour is required for the `common` application;
     * The `WeChat.Storage.ComponentClient` storage adapter behaviour is required for the `component` application.
 
-  Use this library in the hub webapp:
+  Use this library in the hub web app:
 
     * The `WeChat.Storage.Hub` storage adapter behaviour is required for the `common` application;
     * The `WeChat.Storage.ComponentHub` storage adapter behaviour is required for the `component` application.
 
-  As usual, the hub webapp is one-off setup to use this library, most of time we use `elixir_wechat` is in the 3rd-party webapp as a client, so here provide a default storage adapter to conveniently
+  As usual, the hub web app is one-off setup to use this library, most of time we use `elixir_wechat` is in the 3rd-party web app as a client, so here provide a default storage adapter to conveniently
   initialize it as a client use case:
 
     * The `WeChat.Storage.Adapter.DefaultClient` implements `WeChat.Storage.Client` behaviour, and is used for the `common` application by default:
@@ -327,7 +327,7 @@ defmodule WeChat do
 
   ## Options
 
-  - `:appid`, required, if you use a global module to assemble it, this value is optional. If you are using a `common` application, `appid` means the application id of your 
+  - `:appid`, required, if you use a global module to assemble it, this value is optional. If you are using a `common` application, `appid` means the application id of your
   WeChat Official Account; if you are a `component` application, `appid` means the application id of your WeChat Official Account third-party platform application.
   - `:authorizer_appid`, optional, if you are using a `component` application, this value is required, the application id of your WeChat Official Account third-party platform
   application.

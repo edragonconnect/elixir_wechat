@@ -1,6 +1,6 @@
 defmodule WeChat.Storage.Adapter.DefaultClient do
   @moduledoc false
-  # When uses the `{:default, "MyHubBaseURL"}`, there requires some HTTP API functions are provided by the hub webapp server,
+  # When uses the `{:default, "MyHubBaseURL"}`, there requires some HTTP API functions are provided by the hub web app server,
   # let's take "MyHubBaseURL" as "http://localhost:4000" for example.
 
   # ### Refresh access token
@@ -144,7 +144,7 @@ defmodule WeChat.Storage.DefaultHubConnector do
 
   def refresh_access_token(appid, access_token, hub_base_url) do
     Logger.info(
-      "send refresh_token request to wechat hub for appid: #{inspect(appid)}, access_token: #{
+      "send refresh_token request to WeChat hub for appid: #{inspect(appid)}, access_token: #{
         inspect(access_token)
       }"
     )
@@ -156,7 +156,7 @@ defmodule WeChat.Storage.DefaultHubConnector do
       |> response_to_access_token()
 
     Logger.info(
-      "received refreshed token from wechat hub: #{inspect(token)} for appid: #{inspect(appid)}"
+      "received refreshed token from WeChat hub: #{inspect(token)} for appid: #{inspect(appid)}"
     )
 
     token
@@ -164,7 +164,7 @@ defmodule WeChat.Storage.DefaultHubConnector do
 
   def refresh_access_token(appid, authorizer_appid, access_token, hub_base_url) do
     Logger.info(
-      "send refresh_token request to wechat hub for appid: #{inspect(appid)} with authorizer_appid: #{
+      "send refresh_token request to WeChat hub for appid: #{inspect(appid)} with authorizer_appid: #{
         inspect(authorizer_appid)
       }, access_token: #{inspect(access_token)}"
     )
@@ -180,7 +180,7 @@ defmodule WeChat.Storage.DefaultHubConnector do
       |> response_to_access_token()
 
     Logger.info(
-      "received access token from wechat hub: #{inspect(token)} for appid: #{inspect(appid)} with authorizer_appid: #{
+      "received access token from WeChat hub: #{inspect(token)} for appid: #{inspect(appid)} with authorizer_appid: #{
         inspect(authorizer_appid)
       }"
     )
