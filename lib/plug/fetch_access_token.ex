@@ -48,7 +48,10 @@ if Code.ensure_loaded?(Plug) do
     end
 
     defp fetch(_, _) do
-      :invalid
+      {
+        :error,
+        %WeChat.Error{reason: :invalid_request}
+      }
     end
   end
 end
