@@ -66,13 +66,11 @@ GET "/client/ticket"
 For example, assume that the above setup server is runing as "http://localhost:4000", now let's invoke a detailed WeChat's API as an example from the `client` side.
 
 ```
-POST https://api.weixin.qq.com/cgi-bin/material/batchget_material
+POST "https://api.weixin.qq.com/cgi-bin/material/batchget_material"
 
-"Query Params":
-access_token="ACCESS_TOKEN"
+QueryString: access_token="ACCESS_TOKEN"
 
-"Body":
-{"type": "image", "offset": 0, "count": 10}
+Body: {"type": "image", "offset": 0, "count": 10}
 ``` 
 
 #### As `common` client application

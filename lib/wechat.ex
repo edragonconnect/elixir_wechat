@@ -31,8 +31,10 @@ defmodule WeChat do
           adapter_storage: {:default, "http://localhost:4000"}
       end
 
+      #
       # the above equals the following
       #
+ 
       defmodule MyClient do
         use WeChat,
           adapter_storage: {WeChat.Storage.Adapter.DefaultClient, "http://localhost:4000"}
@@ -47,8 +49,10 @@ defmodule WeChat do
           adapter_storage: {:default, "http://localhost:4000"}
       end
 
+      #
       # the above equals the following
       #
+
       defmodule MyComponentClient do
         use WeChat.Component,
           adapter_storage: {WeChat.Storage.Adapter.DefaultComponentClient, "http://localhost:4000"}
@@ -270,15 +274,23 @@ defmodule WeChat do
   defdelegate sign_jssdk(jsapi_ticket, url), to: Utils
 
   @doc """
-  To initialize WeChat Card functions in JSSDK, use `wxcard_ticket` and `card_id` to generate a signature for this scenario.
-  https://developers.weixin.qq.com/doc/offiaccount/OA_Web_Apps/JS-SDK.html#65
+  See `WeChat.sign_card/1`.
   """
-  @spec sign_card(list :: [String.t()]) :: CardSignature.t()
   @spec sign_card(wxcard_ticket :: String.t(), card_id :: String.t()) :: CardSignature.t()
+  defdelegate sign_card(wxcard_ticket, card_id), to: Utils
+
+  @doc """
+  See `WeChat.sign_card/1`.
+  """
   @spec sign_card(wxcard_ticket :: String.t(), card_id :: String.t(), openid :: String.t()) ::
           CardSignature.t()
-  defdelegate sign_card(wxcard_ticket, card_id), to: Utils
   defdelegate sign_card(wxcard_ticket, card_id, openid), to: Utils
+
+  @doc """
+  To initialize WeChat Card functions in JSSDK, use `wxcard_ticket` and `card_id` to generate a signature for this scenario,
+  [see official document](https://developers.weixin.qq.com/doc/offiaccount/OA_Web_Apps/JS-SDK.html#65){:target="_blank"}.
+  """
+  @spec sign_card(list :: [String.t()]) :: CardSignature.t()
   defdelegate sign_card(list), to: Utils
 
   @doc """
