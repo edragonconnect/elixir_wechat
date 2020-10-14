@@ -1,6 +1,8 @@
 defmodule WeChat.MixProject do
   use Mix.Project
 
+  @source_url "https://github.com/edragonconnect/elixir_wechat"
+
   def project do
     [
       app: :elixir_wechat,
@@ -15,7 +17,6 @@ defmodule WeChat.MixProject do
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
   def application do
     [
       extra_applications: [:logger]
@@ -25,7 +26,6 @@ defmodule WeChat.MixProject do
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       {:tesla, "~> 1.3"},
@@ -41,6 +41,7 @@ defmodule WeChat.MixProject do
   defp docs do
     [
       main: "readme",
+      source_url: @source_url,
       formatter_opts: [gfm: true],
       extras: [
         "README.md"
@@ -78,7 +79,7 @@ defmodule WeChat.MixProject do
       files: ["lib", "mix.exs", "README.md", "LICENSE.md"],
       maintainers: ["Xin Zou", "Kevin Pan"],
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/edragonconnect/elixir_wechat"}
+      links: %{"GitHub" => @source_url}
     ]
   end
 end

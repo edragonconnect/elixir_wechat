@@ -1,6 +1,6 @@
 defmodule WeChat.Component do
   @moduledoc """
-  Use for WeChat official accounts third-party platform applitions, `WeChat` module
+  Use for WeChat official accounts third-party platform applications, `WeChat` module
   is usually used for WeChat's functional APIs invoke directly, `WeChat.Component` is used to
   call to refetch/refresh authorizer's access token internally.
   """
