@@ -137,7 +137,13 @@ defmodule WeChat do
         WeChat.common_request(method, options)
       end
 
-      defoverridable request: 2
+      @doc """
+      The expire time (in seconds) to access_token/ticket temporary storage,
+      by default it is 7000 seconds
+      """
+      defdelegate expires_in(), to: WeChat
+
+      defoverridable [request: 2, expires_in: 0]
     end
   end
 
@@ -147,7 +153,7 @@ defmodule WeChat do
     """
     @type t :: %__MODULE__{
             errcode: String.t(),
-            reason: atom(),
+            reason: String.t(),
             message: String.t(),
             http_status: integer()
           }
@@ -203,11 +209,26 @@ defmodule WeChat do
     @moduledoc false
     @type t :: %__MODULE__{
             access_token: String.t(),
-            refresh_token: String.t()
+            refresh_token: String.t(),
+            timestamp: integer(),
+            expires_in: integer()
           }
 
     @derive Jason.Encoder
-    defstruct [:access_token, :refresh_token]
+    defstruct [:access_token, :refresh_token, :timestamp, :expires_in]
+  end
+
+  defmodule Ticket do
+    @moduledoc false
+    @type t :: %__MODULE__{
+            value: String.t(),
+            type: String.t(),
+            timestamp: integer(),
+            expires_in: integer()
+          }
+
+    @derive Jason.Encoder
+    defstruct [:value, :type, :timestamp, :expires_in]
   end
 
   defmodule UploadMedia do
@@ -371,6 +392,13 @@ defmodule WeChat do
   end
 
   @doc """
+  The expire time (in seconds) to access_token/ticket temporary storage,
+  by default it is 7000 seconds
+  """
+  @spec expires_in() :: integer()
+  def expires_in(), do: 7000
+
+  @doc """
   Fetch common access token, when apply it to hub, there will use your account's `secret key`
   to refresh another access token.
   """
@@ -411,7 +439,7 @@ defmodule WeChat do
   end
 
   defp setup_httpclient(%Request{uri: %URI{path: path}}) when path == "" or path == nil do
-    raise %WeChat.Error{reason: :invalid_request, message: "url is required"}
+    raise %WeChat.Error{reason: "invalid_request", message: "url is required"}
   end
 
   defp setup_httpclient(%Request{uri: %URI{path: "/cgi-bin/component" <> _}} = request) do
@@ -457,7 +485,7 @@ defmodule WeChat do
 
     if matched != 1 do
       raise %WeChat.Error{
-        reason: :invalid_config,
+        reason: "invalid_config",
         message:
           "please ensure module: #{inspect(module)} implemented one of #{
             inspect(available_adapter_storage_behaviours)
@@ -511,7 +539,7 @@ defmodule WeChat do
 
   defp do_check_adapter_storage(invalid, :all) do
     raise %WeChat.Error{
-      reason: :invalid_config,
+      reason: "invalid_config",
       message:
         "using unexpected #{inspect(invalid)} adapter storage, please use it as one of [`WeChat.Storage.Client`, `WeChat.Storage.Hub`, `WeChat.Storage.ComponentClient`, `WeChat.Storage.ComponentHub`]"
     }
@@ -549,7 +577,7 @@ defmodule WeChat do
 
   defp do_check_adapter_storage(invalid, :common) do
     raise %WeChat.Error{
-      reason: :invalid_config,
+      reason: "invalid_config",
       message:
         "using unexpected #{inspect(invalid)} adapter storage, please use it as `WeChat.Storage.Client` or `WeChat.Storage.Hub`"
     }
@@ -587,7 +615,7 @@ defmodule WeChat do
 
   defp do_check_adapter_storage(invalid, :component) do
     raise %WeChat.Error{
-      reason: :invalid_config,
+      reason: "invalid_config",
       message:
         "using unexpected #{inspect(invalid)} adapter storage, please use it as `WeChat.Storage.ComponentClient` or `WeChat.Storage.ComponentHub`"
     }
@@ -607,7 +635,7 @@ defmodule WeChat do
 
   defp check_method_opt(method) do
     raise %WeChat.Error{
-      reason: :invalid_request,
+      reason: "invalid_request",
       message: "input invalid http method: #{inspect(method)}"
     }
   end
@@ -622,10 +650,14 @@ defmodule WeChat do
       )
 
     case request_result do
-      {:ok, %{body: %{"access_token" => access_token}}} ->
+      {:ok, %{body: %{"access_token" => access_token} = body}} ->
         {
           :ok,
-          %WeChat.Token{access_token: access_token}
+          %WeChat.Token{
+            access_token: access_token,
+            timestamp: Map.get(body, "timestamp"),
+            expires_in: Map.get(body, "expires_in")
+          }
         }
 
       {:ok, response} ->

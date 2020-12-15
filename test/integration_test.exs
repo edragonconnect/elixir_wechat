@@ -4,6 +4,29 @@ defmodule WeChat.IntegrationTest do
   @common_appid System.fetch_env!("TEST_COMMON_APPID")
   @test_openid System.fetch_env!("TEST_OPENID")
 
+  defp get_user_info(openid \\ @test_openid) do
+    query = [openid: openid]
+
+    {:ok, response} =
+      TestClient1.request(:get,
+        url: "/cgi-bin/user/info",
+        appid: @common_appid,
+        query: query
+      )
+
+    response
+  end
+
+  defp get_jsapi_ticket() do
+    {:ok, response} =
+      TestClient1.request(:get,
+        url: "/cgi-bin/ticket/getticket",
+        appid: @common_appid,
+        query: [type: "jsapi"]
+      )
+    response
+  end
+
   test "user/info" do
     {:ok, response} = TestClient1.request(:get, url: "/cgi-bin/user/info", appid: @common_appid)
 
@@ -14,12 +37,7 @@ defmodule WeChat.IntegrationTest do
       openid: @test_openid
     ]
 
-    {:ok, response} =
-      TestClient1.request(:get,
-        url: "/cgi-bin/user/info",
-        appid: @common_appid,
-        query: query
-      )
+    response = get_user_info()
 
     assert Map.get(response.body, "errcode") == nil
     assert Map.get(response.body, "openid") == @test_openid
@@ -140,5 +158,79 @@ defmodule WeChat.IntegrationTest do
 
     material_items = Map.get(response.body, "item")
     assert is_list(material_items) == true
+  end
+
+  test "make access_token invalid/expired in local registry" do
+    response = get_user_info()
+
+    errcode = Map.get(response.body, "errcode")
+
+    if errcode == nil do
+      registry_key = "access_token.#{@common_appid}"
+
+      token = WeChat.Registry.read_from_local(:fetch_access_token, [@common_appid, ""])
+
+      assert token.access_token != nil and token.timestamp != nil and token.expires_in != nil
+
+      # manual set the local access_token as invalid
+      {_updated, _} = Registry.update_value(WeChat.Registry, registry_key, fn (value) -> Map.put(value, :access_token, "invalid_access_token") end)
+
+      # call call a detailed function with local invalid access_token
+      response = get_user_info()
+
+      errcode = Map.get(response.body, "errcode")
+
+      if errcode == nil do
+        # expected to work
+        assert Map.get(response.body, "openid") == @test_openid
+
+        token = WeChat.Registry.read_from_local(:fetch_access_token, [@common_appid, ""])
+
+        assert token.access_token != nil and token.timestamp != nil and token.expires_in != nil
+      end
+
+      # manual set the local access_token as expired
+      {_updated, _} = Registry.update_value(WeChat.Registry, registry_key, fn (value) -> Map.put(value, :timestamp, 0) end)
+
+      # call call a detailed function with local expired access_token
+      response = get_user_info()
+
+      errcode = Map.get(response.body, "errcode")
+
+      if errcode == nil do
+        # expected to work
+        assert Map.get(response.body, "openid") == @test_openid
+
+        token = WeChat.Registry.read_from_local(:fetch_access_token, [@common_appid, ""])
+
+        assert token.access_token != nil and token.timestamp != nil and token.expires_in != nil
+      end
+    end
+
+  end
+
+  test "ticket in local registry" do
+    response = get_jsapi_ticket()
+
+    %WeChat.Ticket{value: value, timestamp: timestamp, expires_in: expires_in} = WeChat.Registry.read_from_local(:fetch_ticket, [@common_appid, "jsapi", ""])
+
+    assert Map.get(response.body, "ticket") == value
+    assert Map.get(response.body, "timestamp") == timestamp
+    assert Map.get(response.body, "expires_in") == expires_in
+
+    registry_key = "ticket.#{@common_appid}.jsapi"
+
+    # manual set the local jsapid ticket as expired
+    {_updated, _} = Registry.update_value(WeChat.Registry, registry_key, fn (value) -> Map.put(value, :timestamp, 0) end)
+
+    # recall ticket althought the local ticket registry is expired
+    response = get_jsapi_ticket()
+
+    # after the above api recall remotely, will reset the local ticket registry
+    %WeChat.Ticket{value: value, timestamp: timestamp, expires_in: expires_in} = WeChat.Registry.read_from_local(:fetch_ticket, [@common_appid, "jsapi", ""])
+
+    assert Map.get(response.body, "ticket") == value
+    assert Map.get(response.body, "timestamp") == timestamp
+    assert Map.get(response.body, "expires_in") == expires_in
   end
 end

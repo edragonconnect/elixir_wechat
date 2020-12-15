@@ -26,12 +26,20 @@ defmodule WeChat.Component do
         WeChat.component_request(method, options)
       end
 
-      defoverridable request: 2
+      @doc """
+      The expire time (in seconds) to access_token/ticket temporary storage,
+      by default it is 7000 seconds
+      """
+      defdelegate expires_in(), to: WeChat
+
+      defoverridable [request: 2, expires_in: 0]
     end
   end
 
   @doc """
   Fetch component access token, when apply it to hub, there will use `verify ticket` to refetch another component access token.
+
+  This function may be used in hub scenario.
   """
   def fetch_component_access_token(appid, adapter_storage) when is_atom(adapter_storage) do
     fetch_component_access_token(appid, {adapter_storage, nil})
@@ -96,7 +104,7 @@ defmodule WeChat.Component do
         raise %WeChat.Error{
           message:
             "verify_ticket is not existed for appid: #{inspect(appid)}, please try re-authorize",
-          reason: :verify_ticket_not_found
+          reason: "verify_ticket_not_found"
         }
     end
   end
@@ -110,14 +118,13 @@ defmodule WeChat.Component do
   end
 
   def fetch_access_token(appid, authorizer_appid, {adapter_storage, args}) do
-    token = adapter_storage.fetch_access_token(appid, authorizer_appid, args)
+    result = adapter_storage.fetch_access_token(appid, authorizer_appid, args)
 
-    case token do
+    case result do
       {:ok, %WeChat.Token{access_token: access_token}} when access_token != nil ->
-        token
+        result
 
-      {:ok, %WeChat.Token{access_token: nil, refresh_token: refresh_token}}
-      when refresh_token != nil ->
+      {:ok, %WeChat.Token{access_token: nil, refresh_token: refresh_token}} when refresh_token != nil ->
         refresh_or_refetch_token_to_refresh(
           appid,
           authorizer_appid,
@@ -190,7 +197,9 @@ defmodule WeChat.Component do
         {
           :ok,
           %WeChat.Token{
-            access_token: Map.get(response.body, "authorizer_access_token")
+            access_token: Map.get(response.body, "authorizer_access_token"),
+            timestamp: Map.get(response.body, "timestamp"),
+            expires_in: Map.get(response.body, "expires_in")
           }
         }
 
@@ -206,23 +215,32 @@ defmodule WeChat.Component do
   end
 
   defp find_and_refresh_access_token(appid, authorizer_appid, adapter_storage, args) do
-    # The cached component refresh token is expired, rerun refresh token by authorizer list.
-    case remote_find_authorizer_refresh_token(appid, authorizer_appid, adapter_storage, args) do
-      {:ok, refresh_token_str} ->
-        Logger.info(
-          ">>> refresh_token: #{inspect(refresh_token_str)} from remote_find_authorizer_refresh_token"
-        )
 
-        remote_refresh_authorizer_access_token(
-          appid,
-          authorizer_appid,
-          refresh_token_str,
-          adapter_storage,
-          args
-        )
+    behaviours = adapter_storage.module_info[:attributes][:behaviour]
 
-      error ->
-        error
+    if WeChat.Storage.ComponentClient in behaviours do
+      # For client use case, send request to hub for refresh.
+      adapter_storage.refresh_access_token(appid, authorizer_appid, nil, args)
+    else
+      # For hub use case, the cached component refresh token is expired,
+      # rerun refresh token by authorizer list.
+      case remote_find_authorizer_refresh_token(appid, authorizer_appid, adapter_storage, args) do
+        {:ok, refresh_token_str} ->
+          Logger.info(
+            ">>> refresh_token: #{inspect(refresh_token_str)} from remote_find_authorizer_refresh_token"
+          )
+
+          remote_refresh_authorizer_access_token(
+            appid,
+            authorizer_appid,
+            refresh_token_str,
+            adapter_storage,
+            args
+          )
+
+        error ->
+          error
+      end
     end
   end
 
@@ -244,6 +262,7 @@ defmodule WeChat.Component do
 
     case request_result do
       {:ok, response} ->
+        Logger.info ">>> api_get_authorizer_list response: #{inspect(response)}"
         total_count = Map.get(response.body, "total_count")
         Logger.info("remote get authorizer_list total_count: #{total_count}, offset: #{offset}")
         list = Map.get(response.body, "list")
@@ -263,7 +282,7 @@ defmodule WeChat.Component do
               "not find matched authorizer_appid: #{authorizer_appid} in authorizer_list, please double check."
             )
 
-            {:error, %Error{reason: :invalid_authorizer_appid}}
+            {:error, %Error{reason: "invalid_authorizer_appid"}}
           else
             if offset + 1 < total_count do
               remote_find_authorizer_refresh_token(
@@ -279,7 +298,7 @@ defmodule WeChat.Component do
                 "not find matched authorizer_appid: #{authorizer_appid} in authorizer_list, please double check."
               )
 
-              {:error, %Error{reason: :invalid_authorizer_appid}}
+              {:error, %Error{reason: "invalid_authorizer_appid"}}
             end
           end
         end

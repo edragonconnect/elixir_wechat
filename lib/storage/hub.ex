@@ -87,8 +87,7 @@ defmodule WeChat.Storage.Hub do
   @doc """
   Save access_token of WeChat common application.
   """
-  @callback save_access_token(appid :: String.t(), access_token :: String.t(), args :: term()) ::
-              term()
+  @callback save_access_token(appid :: String.t(), access_token :: String.t(), args :: term()) :: {:ok, %WeChat.Token{}}
 
   @doc """
   Refresh access_token of WeChat common application.
@@ -104,13 +103,13 @@ defmodule WeChat.Storage.Hub do
               ticket :: String.t(),
               type :: String.t(),
               args :: term()
-            ) :: term()
+            ) :: {:ok, %WeChat.Ticket{}}
 
   @doc """
   Fetch ticket of WeChat common application, the option of `type` parameter is "wx_card" or "jsapi"(refer WeChat Official document).
   """
   @callback fetch_ticket(appid :: String.t(), type :: String.t(), args :: term()) ::
-              {:ok, String.t()} | {:error, %WeChat.Error{}}
+              {:ok, %WeChat.Ticket{}} | {:error, %WeChat.Error{}}
 end
 
 defmodule WeChat.Storage.ComponentHub do
@@ -265,7 +264,7 @@ defmodule WeChat.Storage.ComponentHub do
               appid :: String.t(),
               component_access_token :: String.t(),
               args :: term()
-            ) :: term()
+            ) :: {:ok, %WeChat.Token{}}
 
   @doc """
   Refresh access_token of WeChat component application.
@@ -300,7 +299,7 @@ defmodule WeChat.Storage.ComponentHub do
               ticket :: String.t(),
               type :: String.t(),
               args :: term()
-            ) :: term()
+            ) :: {:ok, %WeChat.Ticket{}}
 
   @doc """
   Fetch authorizer account's ticket in WeChat component application.
@@ -311,5 +310,5 @@ defmodule WeChat.Storage.ComponentHub do
               type :: String.t(),
               args :: term()
             ) ::
-              {:ok, String.t()} | {:error, %WeChat.Error{}}
+              {:ok, %WeChat.Ticket{}} | {:error, %WeChat.Error{}}
 end

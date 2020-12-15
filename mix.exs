@@ -19,7 +19,8 @@ defmodule WeChat.MixProject do
 
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger],
+      mod: {WeChat.Application, []}
     ]
   end
 
@@ -32,6 +33,7 @@ defmodule WeChat.MixProject do
       {:jason, "~> 1.1"},
       {:timex, "~> 3.6"},
       {:hackney, "~> 1.15.2"},
+      {:decorator, "~> 1.3"},
       {:plug, "~> 1.10", optional: true},
       {:mock, "~> 0.3", only: :test},
       {:ex_doc, "~> 0.21", only: [:docs, :dev], runtime: false}

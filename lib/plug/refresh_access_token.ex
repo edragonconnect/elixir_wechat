@@ -21,7 +21,11 @@ if Code.ensure_loaded?(Plug) do
       result =
         case refresh(body, adapter_storage) do
           {:ok, token} ->
-            %{"access_token" => token.access_token}
+            %{
+              "access_token" => token.access_token,
+              "expires_in" => token.expires_in,
+              "timestamp" => token.timestamp
+            }
 
           {:error, %WeChat.Error{} = error} ->
             Logger.error(
@@ -57,7 +61,7 @@ if Code.ensure_loaded?(Plug) do
     defp refresh(_, _) do
       {
         :error,
-        %WeChat.Error{reason: :invalid_request}
+        %WeChat.Error{reason: "invalid_request"}
       }
     end
   end

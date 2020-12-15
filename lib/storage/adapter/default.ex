@@ -42,20 +42,25 @@ defmodule WeChat.Storage.Adapter.DefaultClient do
 
   @behaviour WeChat.Storage.Client
 
+  use WeChat.Registry
+
   alias WeChat.Storage.DefaultHubConnector, as: Connector
   alias WeChat.Error
 
   @impl true
+  @decorate cache()
   def fetch_access_token(appid, hub_base_url) do
     Connector.fetch_access_token(appid, hub_base_url)
   end
 
   @impl true
+  @decorate cache()
   def refresh_access_token(appid, access_token, hub_base_url) do
     Connector.refresh_access_token(appid, access_token, hub_base_url)
   end
 
   @impl true
+  @decorate cache()
   def fetch_ticket(appid, type, hub_base_url) do
     # currently only support `type` as "jsapi" | "wx_card"
     Connector.fetch_ticket(appid, type, hub_base_url)
@@ -105,20 +110,25 @@ defmodule WeChat.Storage.Adapter.DefaultComponentClient do
 
   @behaviour WeChat.Storage.ComponentClient
 
+  use WeChat.Registry
+
   alias WeChat.Storage.DefaultHubConnector, as: Connector
   alias WeChat.Error
 
   @impl true
+  @decorate cache()
   def fetch_access_token(appid, authorizer_appid, hub_base_url) do
     Connector.fetch_access_token(appid, authorizer_appid, hub_base_url)
   end
 
   @impl true
+  @decorate cache()
   def fetch_component_access_token(appid, hub_base_url) do
     Connector.fetch_component_access_token(appid, hub_base_url)
   end
 
   @impl true
+  @decorate cache()
   def refresh_access_token(
         appid,
         authorizer_appid,
@@ -129,6 +139,7 @@ defmodule WeChat.Storage.Adapter.DefaultComponentClient do
   end
 
   @impl true
+  @decorate cache()
   def fetch_ticket(appid, authorizer_appid, type, hub_base_url) do
     # Currently, `type` supports "jsapi" | "wx_card"
     Connector.fetch_ticket(appid, authorizer_appid, type, hub_base_url)
@@ -235,12 +246,14 @@ defmodule WeChat.Storage.DefaultHubConnector do
     ])
   end
 
-  defp response_to_access_token({:ok, %{status: 200, body: %{"access_token" => access_token}}})
+  defp response_to_access_token({:ok, %{status: 200, body: %{"access_token" => access_token} = body}})
        when access_token != nil and access_token != "" do
     {
       :ok,
       %WeChat.Token{
-        access_token: access_token
+        access_token: access_token,
+        timestamp: Map.get(body, "timestamp"),
+        expires_in: Map.get(body, "expires_in")
       }
     }
   end
@@ -271,23 +284,31 @@ defmodule WeChat.Storage.DefaultHubConnector do
     {
       :error,
       %Error{
-        reason: :fail_fetch_access_token,
+        reason: "fail_fetch_access_token",
         errcode: -1,
         message: error
       }
     }
   end
 
-  defp response_to_ticket({:ok, %{status: 200, body: %{"ticket" => ticket}}})
+  defp response_to_ticket({:ok, %{status: 200, body: %{"ticket" => ticket} = body}})
        when ticket != nil and ticket != "" do
-    {:ok, ticket}
+    {
+      :ok,
+      %WeChat.Ticket{
+        value: ticket,
+        type: Map.get(body, "type"),
+        timestamp: Map.get(body, "timestamp"),
+        expires_in: Map.get(body, "expires_in")
+      }
+    }
   end
 
   defp response_to_ticket({:ok, %{status: status, body: body}}) do
-    {:error, %Error{reason: :fail_fetch_ticket, errcode: -1, http_status: status, message: body}}
+    {:error, %Error{reason: "fail_fetch_ticket", errcode: -1, http_status: status, message: body}}
   end
 
   defp response_to_ticket({:error, error}) do
-    {:error, %Error{reason: :fail_fetch_ticket, errcode: -1, message: error}}
+    {:error, %Error{reason: "fail_fetch_ticket", errcode: -1, message: error}}
   end
 end

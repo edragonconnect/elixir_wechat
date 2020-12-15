@@ -15,7 +15,11 @@ if Code.ensure_loaded?(Plug) do
         try do
           case fetch(query_params, adapter_storage) do
             {:ok, token} ->
-              %{"access_token" => token.access_token}
+              %{
+                "access_token" => token.access_token,
+                "expires_in" => token.expires_in,
+                "timestamp" => token.timestamp
+              }
 
             {:error, %WeChat.Error{} = error} ->
               Logger.error(
@@ -45,7 +49,7 @@ if Code.ensure_loaded?(Plug) do
     defp fetch(_, _) do
       {
         :error,
-        %WeChat.Error{reason: :invalid_request}
+        %WeChat.Error{reason: "invalid_request"}
       }
     end
   end

@@ -16,8 +16,8 @@ defmodule WeChat.Http.Middleware.Component do
       {:error, error} ->
         {:error, error}
 
-      env ->
-        env
+      prepared_env ->
+        prepared_env
         |> Tesla.run(next)
         |> decode_response(env, next, request)
     end
@@ -76,7 +76,7 @@ defmodule WeChat.Http.Middleware.Component do
         Logger.error("not found secret_key for appid: #{inspect(appid)}")
 
         raise %Error{
-          reason: :invalid_config,
+          reason: "invalid_config",
           message: "not found secret_key for appid: #{inspect(appid)}"
         }
     end
@@ -221,6 +221,7 @@ defmodule WeChat.Http.Middleware.Component do
 
       env ->
         body = populate_required_into_body(env.body, [:offset, :count], %{component_appid: appid})
+        Logger.info "after processing api_get_authorizer_list the body: #{inspect(body)}"
 
         {
           Map.put(env, :body, body),
@@ -275,7 +276,7 @@ defmodule WeChat.Http.Middleware.Component do
        when body != "" and body != nil do
     case rerun_when_token_expire(env, next, request, response) do
       {:no_retry, json_resp_body} ->
-        sync_to_storage_cache(json_resp_body, request)
+        json_resp_body = sync_to_storage_cache(json_resp_body, request)
 
         {
           :ok,
@@ -294,12 +295,12 @@ defmodule WeChat.Http.Middleware.Component do
   defp decode_response({:ok, %{body: body} = response}, _env, _next, _request)
        when body == "" or body == nil do
     {:error,
-     %Error{reason: :unknown, message: "response body is empty", http_status: response.status}}
+     %Error{reason: "unknown", message: "response body is empty", http_status: response.status}}
   end
 
   defp decode_response({:error, reason}, _env, _next, _request) do
     Logger.error("occurs error when decode response with reason: #{inspect(reason)}")
-    {:error, %Error{reason: reason}}
+    {:error, %Error{reason: "#{reason}"}}
   end
 
   defp sync_to_storage_cache(
@@ -314,13 +315,16 @@ defmodule WeChat.Http.Middleware.Component do
        when access_token != nil and expires_in != nil do
     authorizer_refresh_token = Map.get(response, "authorizer_refresh_token")
 
-    adapter_storage.save_access_token(
-      appid,
-      authorizer_appid,
-      access_token,
-      authorizer_refresh_token,
-      args
-    )
+    {:ok, token} =
+      adapter_storage.save_access_token(
+        appid,
+        authorizer_appid,
+        access_token,
+        authorizer_refresh_token,
+        args
+      )
+
+    response |> Map.put("expires_in", token.expires_in) |> Map.put("timestamp", token.timestamp)
   end
 
   defp sync_to_storage_cache(
@@ -335,17 +339,20 @@ defmodule WeChat.Http.Middleware.Component do
        when access_token != nil and expires_in != nil do
     authorizer_refresh_token = Map.get(response, "authorizer_refresh_token")
 
-    adapter_storage.save_access_token(
-      appid,
-      authorizer_appid,
-      access_token,
-      authorizer_refresh_token,
-      args
-    )
+    {:ok, token} =
+      adapter_storage.save_access_token(
+        appid,
+        authorizer_appid,
+        access_token,
+        authorizer_refresh_token,
+        args
+      )
+
+    response |> Map.put("expires_in", token.expires_in) |> Map.put("timestamp", token.timestamp)
   end
 
   defp sync_to_storage_cache(
-         %{"component_access_token" => component_access_token, "expires_in" => expires_in},
+         %{"component_access_token" => component_access_token, "expires_in" => expires_in} = response,
          %Request{
            uri: %URI{path: "/cgi-bin/component/api_component_token"},
            adapter_storage: {adapter_storage, args},
@@ -354,10 +361,11 @@ defmodule WeChat.Http.Middleware.Component do
        )
        when component_access_token != nil and expires_in != nil do
     adapter_storage.save_component_access_token(appid, component_access_token, args)
+    response
   end
 
-  defp sync_to_storage_cache(_json_resp_body, _request) do
-    :ok
+  defp sync_to_storage_cache(response, _request) do
+    response
   end
 
   defp populate_required_into_body(body, fields, prepared \\ %{})
@@ -377,7 +385,7 @@ defmodule WeChat.Http.Middleware.Component do
 
   defp populate_required_into_body(body, [], prepared) when is_map(prepared) do
     raise %Error{
-      reason: :invalid_request,
+      reason: "invalid_request",
       message: "http body: #{inspect(body)} is invalid"
     }
   end
@@ -422,7 +430,7 @@ defmodule WeChat.Http.Middleware.Component do
        when is_map(prepared) and is_map(body)
        when is_map(prepared) and is_bitstring(body) do
     raise %Error{
-      reason: :invalid_request,
+      reason: "invalid_request",
       message: "invalid field: #{inspect(current_field)} from request body"
     }
   end
@@ -435,7 +443,7 @@ defmodule WeChat.Http.Middleware.Component do
   defp populate_required_into_body(body, fields, prepared)
        when is_map(prepared) and is_list(fields) and fields != [] do
     raise %Error{
-      reason: :invalid_request,
+      reason: "invalid_request",
       message: "invalid request body: #{inspect(body)}"
     }
   end
@@ -494,7 +502,7 @@ defmodule WeChat.Http.Middleware.Component do
 
     {:error,
      %Error{
-       reason: :invalid_component_verify_ticket,
+       reason: "invalid_component_verify_ticket",
        errcode: errcode,
        message: Map.get(json_resp_body, "errmsg")
      }}
@@ -514,7 +522,7 @@ defmodule WeChat.Http.Middleware.Component do
 
     {:error,
      %Error{
-       reason: :invalid_component_refresh_token,
+       reason: "invalid_component_refresh_token",
        errcode: errcode,
        message: Map.get(json_resp_body, "errmsg")
      }}
@@ -532,7 +540,7 @@ defmodule WeChat.Http.Middleware.Component do
 
     {:error,
      %Error{
-       reason: :invalid_clientip,
+       reason: "invalid_clientip",
        errcode: errcode,
        message: Map.get(json_resp_body, "errmsg")
      }}

@@ -18,8 +18,8 @@ defmodule WeChat.Http.Middleware.Common do
           {:error, error} ->
             {:error, error}
 
-          env ->
-            env
+          prepared_env ->
+            prepared_env
             |> Tesla.run(next)
             |> decode_response(env, next, request)
         end
@@ -45,11 +45,7 @@ defmodule WeChat.Http.Middleware.Common do
       {:ok, ticket} ->
         {
           :cached,
-          %{
-            status: 200,
-            body: %{"errcode" => 0, "errmsg" => "ok", "ticket" => ticket},
-            headers: []
-          }
+          format_cached_ticket_response(ticket)
         }
 
       {:error, _} ->
@@ -74,11 +70,7 @@ defmodule WeChat.Http.Middleware.Common do
       {:ok, ticket} ->
         {
           :cached,
-          %{
-            status: 200,
-            body: %{"errcode" => 0, "errmsg" => "ok", "ticket" => ticket},
-            headers: []
-          }
+          format_cached_ticket_response(ticket)
         }
 
       {:error, _} ->
@@ -88,6 +80,21 @@ defmodule WeChat.Http.Middleware.Common do
 
   defp try_use_from_cache(env, request) do
     {:cont, env, request}
+  end
+
+  defp format_cached_ticket_response(ticket) do
+    %{
+      status: 200,
+      body: %{
+        "errcode" => 0,
+        "errmsg" => "ok",
+        "ticket" => ticket.value,
+        "type" => ticket.type,
+        "timestamp" => ticket.timestamp,
+        "expires_in" => ticket.expires_in
+      },
+      headers: []
+    }
   end
 
   defp prepare_request(env, request) do
@@ -211,9 +218,11 @@ defmodule WeChat.Http.Middleware.Common do
 
   defp decode_response({:ok, %{body: body} = response}, env, next, request)
        when body != "" and body != nil do
+
+    Logger.info "common decode_response: #{inspect(body)}"
     case rerun_when_token_expire(env, next, request, response) do
       {:no_retry, json_resp_body} ->
-        sync_to_storage_cache(json_resp_body, request)
+        json_resp_body = sync_to_storage_cache(json_resp_body, request)
 
         {
           :ok,
@@ -232,27 +241,29 @@ defmodule WeChat.Http.Middleware.Common do
   defp decode_response({:ok, %{body: body} = response}, _env, _next, _request)
        when body == "" or body == nil do
     {:error,
-     %Error{reason: :unknown, message: "response body is empty", http_status: response.status}}
+     %Error{reason: "unknown", message: "response body is empty", http_status: response.status}}
   end
 
   defp decode_response({:error, reason}, _env, _next, _request) do
     Logger.error("occurs error when decode response with reason: #{inspect(reason)}")
-    {:error, %Error{reason: reason}}
+    {:error, %Error{reason: "#{reason}"}}
   end
 
   defp sync_to_storage_cache(
-         %{"access_token" => access_token},
+         %{"access_token" => access_token} = response,
          %Request{
            uri: %URI{path: "/cgi-bin/token"},
            adapter_storage: {adapter_storage, args},
            appid: appid
          }
        ) do
-    adapter_storage.save_access_token(appid, access_token, args)
+    {:ok, token} = adapter_storage.save_access_token(appid, access_token, args)
+
+    response |> Map.put("timestamp", token.timestamp) |> Map.put("expires_in", token.expires_in)
   end
 
   defp sync_to_storage_cache(
-         _json_resp_body,
+         response,
          %Request{
            uri: %URI{path: "/cgi-bin/ticket/getticket"},
            scenario: scenario
@@ -261,11 +272,11 @@ defmodule WeChat.Http.Middleware.Common do
     # ignore ticket storage in non-hub scenario,
     # actually, ticket is fetched from the hub when
     # call "/cgi-bin/ticket/getticket" request in a client.
-    :ok
+    response
   end
 
   defp sync_to_storage_cache(
-         %{"ticket" => ticket},
+         %{"ticket" => ticket} = response,
          %Request{
            uri: %URI{path: "/cgi-bin/ticket/getticket"},
            query: query,
@@ -273,14 +284,15 @@ defmodule WeChat.Http.Middleware.Common do
            appid: appid,
            authorizer_appid: authorizer_appid
          }
-       )
-       when authorizer_appid != nil do
+       ) when authorizer_appid != nil do
     type = Keyword.get(query, :type)
-    adapter_storage.save_ticket(appid, authorizer_appid, ticket, type, args)
+    {:ok, ticket} = adapter_storage.save_ticket(appid, authorizer_appid, ticket, type, args)
+    # keep the latest `WeChat.Ticket` in the response from hub to client
+    response |> Map.put("timestamp", ticket.timestamp) |> Map.put("expires_in", ticket.expires_in)
   end
 
   defp sync_to_storage_cache(
-         %{"ticket" => ticket},
+         %{"ticket" => ticket} = response,
          %Request{
            uri: %URI{path: "/cgi-bin/ticket/getticket"},
            query: query,
@@ -290,11 +302,13 @@ defmodule WeChat.Http.Middleware.Common do
          }
        ) do
     type = Keyword.get(query, :type)
-    adapter_storage.save_ticket(appid, ticket, type, args)
+    {:ok, ticket} = adapter_storage.save_ticket(appid, ticket, type, args)
+    # keep the latest `WeChat.Ticket` in the response from hub to client
+    response |> Map.put("timestamp", ticket.timestamp) |> Map.put("expires_in", ticket.expires_in)
   end
 
-  defp sync_to_storage_cache(_json_resp_body, _request) do
-    :ok
+  defp sync_to_storage_cache(response, _request) do
+    response
   end
 
   defp rerun_when_token_expire(env, next, request, %{body: body} = response) do
@@ -356,7 +370,7 @@ defmodule WeChat.Http.Middleware.Common do
 
     {:error,
      %Error{
-       reason: :invalid_usecase_get_access_token,
+       reason: "invalid_usecase_get_access_token",
        errcode: errcode,
        message: Map.get(json_resp_body, "errmsg")
      }}

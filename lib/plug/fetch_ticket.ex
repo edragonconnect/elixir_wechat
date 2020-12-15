@@ -14,7 +14,12 @@ if Code.ensure_loaded?(Plug) do
         try do
           case fetch(query_params, opts[:adapter_storage]) do
             {:ok, response} ->
-              %{"ticket" => Map.get(response.body, "ticket")}
+              %{
+                "ticket" => Map.get(response.body, "ticket"),
+                "type" => Map.get(response.body, "type"),
+                "expires_in" => Map.get(response.body, "expires_in"),
+                "timestamp" => Map.get(response.body, "timestamp")
+              }
 
             {:error, %WeChat.Error{} = error} ->
               Logger.error(
@@ -69,7 +74,7 @@ if Code.ensure_loaded?(Plug) do
     defp fetch(_, _) do
       {
         :error,
-        %WeChat.Error{reason: :invalid_request}
+        %WeChat.Error{reason: "invalid_request"}
       }
     end
   end

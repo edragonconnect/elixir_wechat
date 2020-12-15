@@ -73,7 +73,7 @@ defmodule WeChat.Storage.Client do
   Fetch ticket of WeChat common application, the option of `type` parameter is "wx_card" or "jsapi"(refer WeChat Official document).
   """
   @callback fetch_ticket(appid :: String.t(), type :: String.t(), args :: term()) ::
-              {:ok, String.t()} | {:error, %WeChat.Error{}}
+              {:ok, %WeChat.Ticket{}} | {:error, %WeChat.Error{}}
 end
 
 defmodule WeChat.Storage.ComponentClient do
@@ -175,5 +175,5 @@ defmodule WeChat.Storage.ComponentClient do
               type :: String.t(),
               args :: term()
             ) ::
-              {:ok, String.t()} | {:error, %WeChat.Error{}}
+              {:ok, %WeChat.Ticket{}} | {:error, %WeChat.Error{}}
 end
