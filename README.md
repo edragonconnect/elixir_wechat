@@ -16,7 +16,7 @@ open ecosystem:
 
 * Authorizes your WeChat Official Account to the WeChat Official Account third-party platform application ([see details](https://developers.weixin.qq.com/doc/oplatform/en/Third-party_Platforms/Third_party_platform_appid.html)), here named it as `component` application in document of `elixir_wechat`, the same below.
 
-This library wants to provide a flexible way to explicitly call **ALL** of
+This library wants to provide a flexible way to explicitly call all of
 WeChat's API functions, meanwhile helps to maintain the fetch-expiry-refresh
 loop cycle of `access_token`, you can choose your way to storage
 `access_token`, `jssdk-ticket` and `card-ticket` as well.
@@ -26,7 +26,7 @@ loop cycle of `access_token`, you can choose your way to storage
 Refer the official
 [document](https://developers.weixin.qq.com/doc/offiaccount/en/Basic_Information/Get_access_token.html)'s
 recommend there needs the centralization nodes to maintain the life cycle of
-`access_token` (storage/refresh/fetch).
+`access_token` (fetch/storage/refresh).
 
 This library is designed for these four use scenarios:
 
@@ -51,10 +51,24 @@ Notice:
 ```elixir
 def deps do
   [
-   {:elixir_wechat, "~> 0.2"}
+   {:elixir_wechat, "~> 0.3"}
   ]
 end
 ```
+
+### Http Client
+
+Currently, this library uses `Tesla.Adapter.Finch` to process http request/response, you can optionally define Finch's 
+default pool setting like this:
+
+```
+config :elixir_wechat,
+  pool_size: 100,
+  pool_count: 1
+```
+
+* `pool_size`, optional, number of connections to maintain in each pool, see `Finch.request/6` for details, default to 100.
+* `pool_count`, optional, number of pools to start, see `Finch.request/6` for details, default to 1.
 
 ### Usage
 

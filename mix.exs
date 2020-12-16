@@ -29,10 +29,10 @@ defmodule WeChat.MixProject do
 
   defp deps do
     [
-      {:tesla, "~> 1.3"},
+      {:tesla, "~> 1.4"},
+      {:finch, "~> 0.5"},
       {:jason, "~> 1.1"},
       {:timex, "~> 3.6"},
-      {:hackney, "~> 1.15.2"},
       {:decorator, "~> 1.3"},
       {:plug, "~> 1.10", optional: true},
       {:mock, "~> 0.3", only: :test},
@@ -49,25 +49,38 @@ defmodule WeChat.MixProject do
         "README.md"
       ],
       groups_for_modules: [
-        {"BeHaviour",
-         [
-           WeChat.Storage.Client,
-           WeChat.Storage.Hub,
-           WeChat.Storage.ComponentClient,
-           WeChat.Storage.ComponentHub
-         ]},
-        {"Meta",
-         [
-           WeChat.CardSignature,
-           WeChat.JSSDKSignature,
-           WeChat.Token,
-           WeChat.Error
-         ]},
-        {"Meta Upload",
-         [
-           WeChat.UploadMedia,
-           WeChat.UploadMediaContent
-         ]}
+        {
+          "BeHaviour",
+          [
+            WeChat.Storage.Client,
+            WeChat.Storage.Hub,
+            WeChat.Storage.ComponentClient,
+            WeChat.Storage.ComponentHub
+          ]
+        },
+        {
+          "Default Storage Client to Hub",
+          [
+            WeChat.Storage.Adapter.DefaultClient,
+            WeChat.Storage.Adapter.DefaultComponentClient
+          ]
+        },
+        {
+          "Meta",
+          [
+            WeChat.CardSignature,
+            WeChat.JSSDKSignature,
+            WeChat.Token,
+            WeChat.Error
+          ]
+        },
+        {
+          "Meta Upload",
+          [
+            WeChat.UploadMedia,
+            WeChat.UploadMediaContent
+          ]
+        }
       ]
     ]
   end

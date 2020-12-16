@@ -5,10 +5,33 @@ defmodule WeChat.Application do
 
   def start(_type, _args) do
     child_spec = [
-      {Registry, keys: :unique, name: WeChat.Registry}
+      spec_registry(),
+      spec_http_client()
     ]
 
     Supervisor.start_link(child_spec, strategy: :one_for_one)
+  end
+
+  def http_name() do
+    __MODULE__.Finch
+  end
+
+  defp spec_http_client() do
+    app = Application.get_application(__MODULE__)
+    {
+      Finch,
+      pools: %{
+        :default => [
+          size: Application.get_env(app, :pool_size, 100),
+          count: Application.get_env(app, :pool_count, 1)
+        ]
+      },
+      name: http_name()
+    }
+  end
+
+  defp spec_registry() do
+    {Registry, keys: :unique, name: WeChat.Registry}
   end
 
 end
