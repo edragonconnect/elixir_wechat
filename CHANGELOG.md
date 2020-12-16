@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.1 (2020-12-16)
+
+* Fix WeChat.Registry to use :ets as a global storage instead of Elixir Registry
+
 ## v0.3.0 (2020-12-16)
 
 * Add local registry for `access_token` and `ticket` in client to effectively call WeChat functional API
