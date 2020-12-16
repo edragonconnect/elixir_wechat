@@ -27,8 +27,8 @@ defmodule WeChat.Component do
       end
 
       @doc """
-      The expire time (in seconds) to access_token/ticket temporary storage,
-      by default it is 7000 seconds
+      The expire time (in seconds) to `access_token` and `ticket` temporary storage,
+      by default it is 7200 seconds
       """
       defdelegate expires_in(), to: WeChat
 

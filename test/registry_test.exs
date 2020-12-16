@@ -78,4 +78,8 @@ defmodule WeChat.RegistryTest do
     assert Registry.read_from_local(:fetch_component_access_token, ["appid", ""]) == data
   end
 
+  test "defined client expires_in override" do
+    assert CustomExpiresInComponentClient.expires_in() == 5000
+    assert CustomExpiresInClient.expires_in() == 6000
+  end
 end

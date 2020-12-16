@@ -138,8 +138,8 @@ defmodule WeChat do
       end
 
       @doc """
-      The expire time (in seconds) to access_token/ticket temporary storage,
-      by default it is 7000 seconds
+      The expire time (in seconds) to `access_token` and `ticket` temporary storage,
+      by default it is 7200 seconds
       """
       defdelegate expires_in(), to: WeChat
 
@@ -393,10 +393,10 @@ defmodule WeChat do
 
   @doc """
   The expire time (in seconds) to `access_token` and `ticket` temporary storage,
-  by default it is 7000 seconds
+  by default it is 7200 seconds
   """
   @spec expires_in() :: integer()
-  def expires_in(), do: 7000
+  def expires_in(), do: 7200
 
   @doc """
   A function helper to fetch `common` application's access token.
