@@ -210,7 +210,7 @@ defmodule WeChat.Component.IntegrationTest do
       assert token.access_token != nil
 
       # manual set the local access_token as invalid
-      {_updated, _} = Registry.update_value(WeChat.Registry, registry_key, fn (value) -> Map.put(value, :access_token, "invalid_access_token") end)
+      :ets.insert(WeChat.Registry, {registry_key, Map.put(token, :access_token, "invalid_access_token")})
 
       # call a detailed function with local invalid access_token
       response = get_user_info()
@@ -227,7 +227,7 @@ defmodule WeChat.Component.IntegrationTest do
       end
 
       # manual set the local access_token as expired
-      {_updated, _} = Registry.update_value(WeChat.Registry, registry_key, fn (value) -> Map.put(value, :timestamp, 0) end)
+      :ets.insert(WeChat.Registry, {registry_key, Map.put(token, :timestamp, 0)})
 
       # call a detailed function with local expired access_token
       response = get_user_info()
@@ -249,8 +249,9 @@ defmodule WeChat.Component.IntegrationTest do
   test "ticket in local registry" do
     response = get_jsapi_ticket()
 
-    %WeChat.Ticket{value: value, timestamp: timestamp, expires_in: expires_in} =
-      WeChat.Registry.read_from_local(:fetch_ticket, [@component_appid, @authorizer_appid, "jsapi", ""])
+    ticket = WeChat.Registry.read_from_local(:fetch_ticket, [@component_appid, @authorizer_appid, "jsapi", ""])
+
+    %WeChat.Ticket{value: value, timestamp: timestamp, expires_in: expires_in} = ticket
 
     assert Map.get(response.body, "ticket") == value
     assert Map.get(response.body, "timestamp") == timestamp
@@ -259,7 +260,7 @@ defmodule WeChat.Component.IntegrationTest do
     registry_key = "ticket.#{@component_appid}.#{@authorizer_appid}.jsapi"
 
     # manual set the local jsapid ticket as expired
-    {_updated, _} = Registry.update_value(WeChat.Registry, registry_key, fn (value) -> Map.put(value, :timestamp, 0) end)
+    :ets.insert(WeChat.Registry, {registry_key, Map.put(ticket, :timestamp, 0)})
 
     # recall ticket althought the local ticket registry is expired
     response = get_jsapi_ticket()
@@ -285,7 +286,7 @@ defmodule WeChat.Component.IntegrationTest do
     # currently, since the `component_access_token` is maintained(cover refresh) in hub scenario,
     # make `component_access_token` as invalid in client scenario is out of scope,
     # we can test this case in hub scenario
-    {_updated, _} = Registry.update_value(WeChat.Registry, registry_key, fn (value) -> Map.put(value, :timestamp, 0) end)
+    :ets.insert(WeChat.Registry, {registry_key, Map.put(token, :timestamp, 0)})
 
     response = component_get_authorizer_list()
     assert Map.get(response.body, "list") != nil

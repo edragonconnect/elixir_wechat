@@ -3,7 +3,7 @@ defmodule WeChat.RegistryTest do
 
   alias WeChat.{Registry, Utils}
 
-  test ":fetch_access_token" do
+  test "fetch_access_token" do
     # component client
     #
     {key, item} = Registry.read_from_local(:fetch_access_token, ["appid", "authorizer_appid", ""])
@@ -26,7 +26,7 @@ defmodule WeChat.RegistryTest do
     assert Registry.read_from_local(:fetch_access_token, ["appid", ""]) == data
   end
 
-  test ":fetch_ticket" do
+  test "fetch_ticket" do
     # component client
     #
     {key, item} = Registry.read_from_local(:fetch_ticket, ["appid", "authorizer_appid", "tickettype", ""])
@@ -44,7 +44,7 @@ defmodule WeChat.RegistryTest do
     assert Registry.read_from_local(:fetch_ticket, ["appid", "tickettype", ""]) == data
   end
 
-  test ":refresh_access_token" do
+  test "refresh_access_token" do
     # component client
     #
     {key, item} = Registry.read_from_local(:refresh_access_token, ["appid", "authorizer_appid", "fake_access_token", ""])
@@ -68,7 +68,7 @@ defmodule WeChat.RegistryTest do
     assert item == nil
   end
 
-  test ":fetch_component_access_token" do
+  test "fetch_component_access_token" do
     {key, item} = Registry.read_from_local(:fetch_component_access_token, ["appid", ""])
     assert item == nil
 
@@ -81,5 +81,43 @@ defmodule WeChat.RegistryTest do
   test "defined client expires_in override" do
     assert CustomExpiresInComponentClient.expires_in() == 5000
     assert CustomExpiresInClient.expires_in() == 6000
+  end
+
+  test "global read/write and unique" do
+    key = "access_token.G1"
+    access_token = "test_access_token"
+    data = %WeChat.Token{access_token: access_token, timestamp: Utils.now_unix(), expires_in: WeChat.expires_in()}
+
+    task = Task.async(fn ->
+      Registry.write_to_local(key, {:ok, data})
+    end)
+    Task.await(task)
+
+    token = Registry.read_from_local(:fetch_access_token, ["G1", ""])
+    assert token.access_token == access_token
+
+    Task.async_stream([1, 2, 3], fn(_i) ->
+      Registry.read_from_local(:fetch_access_token, ["G1", ""])
+    end)
+    |> Enum.map(fn {:ok, token} ->
+      assert token.access_token == access_token
+    end)
+
+    access_token = "test_access_token2"
+    data = %WeChat.Token{access_token: access_token, timestamp: Utils.now_unix(), expires_in: WeChat.expires_in()}
+    task = Task.async(fn ->
+      Registry.write_to_local(key, {:ok, data})
+    end)
+    Task.await(task)
+
+    token = Registry.read_from_local(:fetch_access_token, ["G1", ""])
+    assert token.access_token == access_token
+
+    access_token = "test_access_token3"
+    data = Map.put(data, :access_token, access_token)
+    Registry.write_to_local(key, {:ok, data})
+
+    token = Registry.read_from_local(:fetch_access_token, ["G1", ""])
+    assert token.access_token == access_token
   end
 end

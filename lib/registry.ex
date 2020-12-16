@@ -2,8 +2,19 @@ defmodule WeChat.Registry do
   @moduledoc false
 
   use Decorator.Define, [cache: 0]
+  use GenServer
 
   alias WeChat.Utils
+
+  def start_link() do
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  end
+
+  @impl true
+  def init(_) do
+    ets = :ets.new(__MODULE__, [:public, :named_table, read_concurrency: true])
+    {:ok, ets}
+  end
 
   def cache(body, context) do
     quote do
@@ -24,18 +35,14 @@ defmodule WeChat.Registry do
   def read_from_local(:refresh_access_token, [appid, _access_token, _hub_url]) do
     # always clean registry when refresh
     key = key_access_token([appid])
-
-    unregister(key)
-
+    delete(key)
     {key, nil}
   end
 
   def read_from_local(:refresh_access_token, [appid, authorizer_appid, _access_token, _hub_url]) do
     # always clean registry when refresh
     key = key_access_token([appid, authorizer_appid])
-
-    unregister(key)
-
+    delete(key)
     {key, nil}
   end
 
@@ -75,14 +82,7 @@ defmodule WeChat.Registry do
   end
 
   def write_to_local(key, {:ok, value}) do
-    case Registry.register(__MODULE__, key, value) do
-      {:ok, _pid} ->
-        :ok
-      {:error, {:already_registered, _pid}} ->
-        Registry.update_value(__MODULE__, key, fn(_) ->
-          value
-        end)
-    end
+    :ets.insert(__MODULE__, {key, value})
   end
   def write_to_local(_key, _) do
     # ignore error case
@@ -105,21 +105,24 @@ defmodule WeChat.Registry do
     (Utils.now_unix() - value.timestamp) >= value.expires_in
   end
 
-  defp unregister(key) do
-    Registry.unregister(__MODULE__, key)
+  defp delete(key) do
+    :ets.delete(__MODULE__, key)
   end
 
   defp lookup(key) do
-    {
-      key,
-      Registry.lookup(__MODULE__, key),
-    }
+    case :ets.lookup(__MODULE__, key) do
+      [] ->
+        {key, nil}
+      [{^key, value}] ->
+        {key, value}
+    end
   end
 
-  defp use_cache_if_not_expired({key, []}) do
+  defp use_cache_if_not_expired({key, nil}) do
     {key, nil}
   end
-  defp use_cache_if_not_expired({key, [{_pid, value}]}) do
+
+  defp use_cache_if_not_expired({key, value}) do
     if expired?(value) do
       {key, nil}
     else
