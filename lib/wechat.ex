@@ -393,7 +393,35 @@ defmodule WeChat do
 
   @doc """
   The expire time (in seconds) to `access_token` and `ticket` temporary storage,
-  by default it is 7200 seconds
+  by default it is 7200 seconds.
+
+  For hub scenario, both `common` and `component` application can override this function in the defined
+  basic module if needed, and then can use this function as a global setting to use in `access_token` and `ticket`
+  life cycle management, for example:
+
+  ```
+  defmodule MyHubComponentClient do
+    use WeChat.Component,
+      scenario: :hub,
+      adapter_storage: MyComponentLocalStorage
+
+    def expires_in(), do: 7000
+  end
+  ```
+
+  ```
+  defmodule MyHubCommonClient do
+    use WeChat,
+      scenario: :hub,
+      adapter_storage: MyCommonLocalStorage
+
+    def expires_in(), do: 7000
+  end
+  ```
+
+  For client scenario, no need to use this function, the local registry for `access_token` and `ticket` will
+  use hub's response(contain time related) when fetch/refresh `access_token` and `ticket` to manage them as a
+  client side temporary cache.
   """
   @spec expires_in() :: integer()
   def expires_in(), do: 7200
