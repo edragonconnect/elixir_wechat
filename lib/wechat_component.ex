@@ -266,7 +266,6 @@ defmodule WeChat.Component do
 
     case request_result do
       {:ok, response} ->
-        Logger.info ">>> api_get_authorizer_list response: #{inspect(response)}"
         total_count = Map.get(response.body, "total_count")
         Logger.info("remote get authorizer_list total_count: #{total_count}, offset: #{offset}")
         list = Map.get(response.body, "list")

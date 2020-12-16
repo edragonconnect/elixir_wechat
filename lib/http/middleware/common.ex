@@ -258,7 +258,8 @@ defmodule WeChat.Http.Middleware.Common do
          }
        ) do
     {:ok, token} = adapter_storage.save_access_token(appid, access_token, args)
-
+    # Keep the latest `WeChat.Token` in the response from hub to client, and then client can
+    # use this `timestamp` and `expires_in` for local registry management in client side.
     response |> Map.put("timestamp", token.timestamp) |> Map.put("expires_in", token.expires_in)
   end
 
@@ -269,7 +270,7 @@ defmodule WeChat.Http.Middleware.Common do
            scenario: scenario
          }
        ) when scenario != :hub do
-    # ignore ticket storage in non-hub scenario,
+    # Ignore ticket storage in non-hub scenario,
     # actually, ticket is fetched from the hub when
     # call "/cgi-bin/ticket/getticket" request in a client.
     response
@@ -287,7 +288,8 @@ defmodule WeChat.Http.Middleware.Common do
        ) when authorizer_appid != nil do
     type = Keyword.get(query, :type)
     {:ok, ticket} = adapter_storage.save_ticket(appid, authorizer_appid, ticket, type, args)
-    # keep the latest `WeChat.Ticket` in the response from hub to client
+    # Keep the latest `WeChat.Ticket` in the response from hub to client, and then client can
+    # use this `timestamp` and `expires_in` for local registry management in client side.
     response |> Map.put("timestamp", ticket.timestamp) |> Map.put("expires_in", ticket.expires_in)
   end
 
@@ -303,7 +305,8 @@ defmodule WeChat.Http.Middleware.Common do
        ) do
     type = Keyword.get(query, :type)
     {:ok, ticket} = adapter_storage.save_ticket(appid, ticket, type, args)
-    # keep the latest `WeChat.Ticket` in the response from hub to client
+    # Keep the latest `WeChat.Ticket` in the response from hub to client, and then client can
+    # use this `timestamp` and `expires_in` for local registry management in client side.
     response |> Map.put("timestamp", ticket.timestamp) |> Map.put("expires_in", ticket.expires_in)
   end
 
