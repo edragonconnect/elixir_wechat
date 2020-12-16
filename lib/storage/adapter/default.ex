@@ -1,44 +1,68 @@
 defmodule WeChat.Storage.Adapter.DefaultClient do
-  @moduledoc false
-  # When uses the `{:default, "MyHubBaseURL"}`, there requires some HTTP API functions are provided by the hub web app server,
-  # let's take "MyHubBaseURL" as "http://localhost:4000" for example.
+  @moduledoc """
+  For `common` application.
 
-  # ### Refresh access token
+  ```
+  defmodule MyClient do
+    use WeChat,
+      adapter_storage: {:default, "http://localhost:4000"},
+      appid: "MyAppID"
+  end
+  ```
 
-  # ```
-  # Request
-  # - method: POST http://localhost:4000/refresh/access_token
-  # - body: %{"appid" => "MyAppID", "access_token" => "CurrentExpiryAccessToken"}
-  # - body format: json
+  The above equals as below
 
-  # Response
-  # - success body: %{"access_token" => "..."}
-  # - error body: any content is acceptable will be return back into `WeChat.Error`
-  # ```
+  ```
+  defmodule MyClient do
+    use WeChat,
+      adapter_storage: {
+        WeChat.Storage.Adapter.DefaultClient,
+        "http://localhost:4000"
+      },
+      appid: "MyAppID"
+  end
+  ```
 
-  # ### Fetch access token
+  When uses the `{:default, "MyHubBaseURL"}`, there requires some HTTP API functions are provided by the hub web app server,
+  let's take "MyHubBaseURL" as "http://localhost:4000" for example.
 
-  # ```
-  # Request
-  # - method: GET http://localhost:4000/client/access_token
-  # - query string: appid="MyAppID"
+  ### Refresh access token
 
-  # Response
-  # - success body: %{"access_token" => "..."}
-  # - error body: any error content is acceptable will be return back into `WeChat.Error`
-  # ```
+  ```
+  Request
+  - method: POST http://localhost:4000/refresh/access_token
+  - body: %{"appid" => "MyAppID", "access_token" => "CurrentExpiryAccessToken"}
+  - body format: json
 
-  # ### Fetch jsapi-ticket/card-ticket
+  Response
+  - success body: %{"access_token" => "...", "expires_in" => integer(), "timestamp" => integer()}
+  - error body: any content is acceptable will be return back into `WeChat.Error`
+  ```
 
-  # ```
-  # Request
-  # - method: GET http://localhost:4000/client/ticket
-  # - query string: appid="MyAppID"&type=jsapi or appid="MyAppID"&type=wx_card
+  ### Fetch access token
 
-  # Response
-  # - success body: %{"ticket" => "..."}
-  # - error body: any error content is acceptable will be return back into `WeChat.Error`
-  # ```
+  ```
+  Request
+  - method: GET http://localhost:4000/client/access_token
+  - query string: appid="MyAppID"
+
+  Response
+  - success body: %{"access_token" => "...", "expires_in" => integer(), "timestamp" => integer()}
+  - error body: any error content is acceptable will be return back into `WeChat.Error`
+  ```
+
+  ### Fetch jsapi-ticket/card-ticket
+
+  ```
+  Request
+  - method: GET http://localhost:4000/client/ticket
+  - query string: appid="MyAppID"&type=jsapi or appid="MyAppID"&type=wx_card
+
+  Response
+  - success body: %{"ticket" => "...", "expires_in" => integer(), timestamp => integer(), "type" => "jsapi" | "wx_card"}
+  - error body: any error content is acceptable will be return back into `WeChat.Error`
+  ```
+  """
 
   @behaviour WeChat.Storage.Client
 
@@ -68,45 +92,70 @@ defmodule WeChat.Storage.Adapter.DefaultClient do
 end
 
 defmodule WeChat.Storage.Adapter.DefaultComponentClient do
-  @moduledoc false
-  # For `component` application
+  @moduledoc """
+  For `component` application.
 
-  # ### Refresh authorizer access_token
+  ```
+  defmodule MyClient do
+    use WeChat.Component,
+      adapter_storage: {:default, "http://localhost:4000"},
+      appid: "MyComponentAppID"
+  end
+  ```
 
-  # ```
-  # Request
-  # - method: POST http://localhost:4000/refresh/access_token
-  # - body: %{"appid" => "Your3rdComponentAppID", "authorizer_appid" => "YourAuthorizerAppID", "access_token" => "CurrentExpiryAccessToken"}
-  # - body format: json
+  The above equals as below
 
-  # Response
-  # - success body: %{"access_token" => "..."}
-  # - error body: any content is acceptable will be return back into `WeChat.Error`
-  # ```
+  ```
+  defmodule MyClient do
+    use WeChat.Component,
+      adapter_storage: {
+        WeChat.Storage.Adapter.DefaultComponentClient,
+        "http://localhost:4000"
+      },
+      appid: "MyComponentAppID"
+  end
+  ```
 
-  # ### Fetch access_token
+  When uses the `{:default, "MyHubBaseURL"}`, there requires some HTTP API functions are provided by the hub web app server,
+  let's take "MyHubBaseURL" as "http://localhost:4000" for example.
 
-  # ```
-  # Request
-  # - method: GET http://localhost:4000/client/access_token
-  # - query string: appid="MyAppID"
+  ### Refresh authorizer access_token
 
-  # Response
-  # - success body: %{"access_token" => "..."}
-  # - error body: any error content is acceptable will be return back into `WeChat.Error`
-  # ```
+  ```
+  Request
+  - method: POST http://localhost:4000/refresh/access_token
+  - body: %{"appid" => "Your3rdComponentAppID", "authorizer_appid" => "YourAuthorizerAppID", "access_token" => "CurrentExpiryAccessToken"}
+  - body format: json
 
-  # ### Fetch jsapi-ticket/card-ticket
+  Response
+  - success body: %{"access_token" => "...", "expires_in" => integer(), "timestamp" => integer()}
+  - error body: any content is acceptable will be return back into `WeChat.Error`
+  ```
 
-  # ```
-  # Request
-  # - method: GET http://localhost:4000/client/ticket
-  # - query string: appid="MyAppID"&type=jsapi or appid="MyAppID"&type=wx_card
+  ### Fetch access_token
 
-  # Response
-  # - success body: %{"ticket" => "..."}
-  # - error body: any error content is acceptable will be return back into `WeChat.Error`
-  # ```
+  ```
+  Request
+  - method: GET http://localhost:4000/client/access_token
+  - query string: appid="MyAppID"
+
+  Response
+  - success body: %{"access_token" => "...", "expires_in" => integer(), "timestamp" => integer()}
+  - error body: any error content is acceptable will be return back into `WeChat.Error`
+  ```
+
+  ### Fetch jsapi-ticket/card-ticket
+
+  ```
+  Request
+  - method: GET http://localhost:4000/client/ticket
+  - query string: appid="MyAppID"&type=jsapi or appid="MyAppID"&type=wx_card
+
+  Response
+  - success body: %{"ticket" => "...", "expires_in" => integer(), "timestamp" => integer(), "type" => "jsapi" | "wx_card"}
+  - error body: any error content is acceptable will be return back into `WeChat.Error`
+  ```
+  """
 
   @behaviour WeChat.Storage.ComponentClient
 

@@ -593,7 +593,7 @@ defmodule WeChat do
   end
 
   defp do_check_adapter_storage({adapter_storage, args}, :common)
-       when is_atom(adapter_storage) and is_list(args) do
+       when is_atom(adapter_storage) do
     ensure_implements(
       adapter_storage,
       [
