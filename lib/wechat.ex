@@ -392,15 +392,17 @@ defmodule WeChat do
   end
 
   @doc """
-  The expire time (in seconds) to access_token/ticket temporary storage,
+  The expire time (in seconds) to `access_token` and `ticket` temporary storage,
   by default it is 7000 seconds
   """
   @spec expires_in() :: integer()
   def expires_in(), do: 7000
 
   @doc """
-  Fetch common access token, when apply it to hub, there will use your account's `secret key`
-  to refresh another access token.
+  A function helper to fetch `common` application's access token.
+
+  When apply it to hub, if no available access token from hub's storage, there will use
+  the set account's `secret_key` to refresh a new one.
   """
   def fetch_access_token(appid, adapter_storage) when is_atom(adapter_storage) do
     fetch_access_token(appid, {adapter_storage, nil})

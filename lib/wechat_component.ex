@@ -37,9 +37,10 @@ defmodule WeChat.Component do
   end
 
   @doc """
-  Fetch component access token, when apply it to hub, there will use `verify ticket` to refetch another component access token.
+  A function helper to fetch `component` application's access token.
 
-  This function may be used in hub scenario.
+  When apply it to hub, if no available component access token from hub's storage, there will use `verify_ticket` to refetch a new one,
+  this function can be used for refresh function.
   """
   def fetch_component_access_token(appid, adapter_storage) when is_atom(adapter_storage) do
     fetch_component_access_token(appid, {adapter_storage, nil})
@@ -110,7 +111,10 @@ defmodule WeChat.Component do
   end
 
   @doc """
-  Fetch authorizer appid's access token, when apply it to hub, there will use `refresh_token` to refresh another access token.
+  A function helper to fetch authorizer application's access token from `component` application.
+
+  When apply it to hub, if no available access token from hub's storage, there will use `refresh_token` to refetch a new one,
+  this function can be used for refresh function.
   """
   def fetch_access_token(appid, authorizer_appid, adapter_storage)
       when is_atom(adapter_storage) and adapter_storage != nil do
