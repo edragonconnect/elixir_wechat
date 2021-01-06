@@ -6,7 +6,7 @@ defmodule WeChat.MixProject do
   def project do
     [
       app: :elixir_wechat,
-      version: "0.3.2",
+      version: "0.3.3",
       elixir: "~> 1.9",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
