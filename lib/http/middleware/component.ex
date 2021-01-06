@@ -56,7 +56,7 @@ defmodule WeChat.Http.Middleware.Component do
   defp populate_component_access_token(
          env,
          %Request{
-           uri: %URI{path: "/sns/jscode2session"},
+           uri: %URI{path: "/sns/component/jscode2session"},
            authorizer_appid: authorizer_appid,
            appid: appid
          } = request
