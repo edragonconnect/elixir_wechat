@@ -29,10 +29,34 @@ defmodule WeChat.Http.Middleware.Component do
     |> Common.encode_request()
   end
 
+  # https://developers.weixin.qq.com/doc/oplatform/Third-party_Platforms/Official_Accounts/official_account_website_authorization.html
   defp populate_component_access_token(
          env,
          %Request{
            uri: %URI{path: "/sns/oauth2/component/access_token"},
+           authorizer_appid: authorizer_appid,
+           appid: appid
+         } = request
+       ) do
+    case append_component_access_token(env, request) do
+      {:error, error} ->
+        {:error, error}
+
+      env ->
+        query = Keyword.merge([appid: authorizer_appid, component_appid: appid], env.query)
+
+        {
+          Map.put(env, :query, query),
+          request
+        }
+    end
+  end
+
+  # https://developers.weixin.qq.com/doc/oplatform/Third-party_Platforms/Mini_Programs/WeChat_login.html
+  defp populate_component_access_token(
+         env,
+         %Request{
+           uri: %URI{path: "/sns/jscode2session"},
            authorizer_appid: authorizer_appid,
            appid: appid
          } = request
@@ -221,7 +245,7 @@ defmodule WeChat.Http.Middleware.Component do
 
       env ->
         body = populate_required_into_body(env.body, [:offset, :count], %{component_appid: appid})
-        Logger.info "after processing api_get_authorizer_list the body: #{inspect(body)}"
+        Logger.info("after processing api_get_authorizer_list the body: #{inspect(body)}")
 
         {
           Map.put(env, :body, body),
@@ -263,7 +287,7 @@ defmodule WeChat.Http.Middleware.Component do
         {:error, error}
 
       {:ok, %WeChat.Token{access_token: component_access_token}}
-        when is_bitstring(component_access_token) ->
+      when is_bitstring(component_access_token) ->
         Map.update!(
           env,
           :query,
@@ -352,7 +376,8 @@ defmodule WeChat.Http.Middleware.Component do
   end
 
   defp sync_to_storage_cache(
-         %{"component_access_token" => component_access_token, "expires_in" => expires_in} = response,
+         %{"component_access_token" => component_access_token, "expires_in" => expires_in} =
+           response,
          %Request{
            uri: %URI{path: "/cgi-bin/component/api_component_token"},
            adapter_storage: {adapter_storage, args},

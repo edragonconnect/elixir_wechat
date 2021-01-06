@@ -61,7 +61,6 @@ defmodule WeChat.Http.Middleware.Common do
            adapter_storage: {adapter_storage, args}
          } = request
        ) do
-
     type = Keyword.get(request.query, :type)
 
     appid = request.appid
@@ -218,8 +217,8 @@ defmodule WeChat.Http.Middleware.Common do
 
   defp decode_response({:ok, %{body: body} = response}, env, next, request)
        when body != "" and body != nil do
+    Logger.info("common decode_response: #{inspect(body)}")
 
-    Logger.info "common decode_response: #{inspect(body)}"
     case rerun_when_token_expire(env, next, request, response) do
       {:no_retry, json_resp_body} ->
         json_resp_body = sync_to_storage_cache(json_resp_body, request)
