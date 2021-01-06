@@ -34,7 +34,7 @@ defmodule WeChat do
       #
       # the above equals the following
       #
- 
+
       defmodule MyClient do
         use WeChat,
           adapter_storage: {WeChat.Storage.Adapter.DefaultClient, "http://localhost:4000"}
@@ -143,7 +143,7 @@ defmodule WeChat do
       """
       defdelegate expires_in(), to: WeChat
 
-      defoverridable [request: 2, expires_in: 0]
+      defoverridable request: 2, expires_in: 0
     end
   end
 
@@ -188,7 +188,7 @@ defmodule WeChat do
             query: keyword(),
             opts: keyword(),
             access_token: String.t(),
-            scenario: :hub | nil,
+            scenario: :hub | nil
           }
 
     defstruct [
@@ -485,6 +485,14 @@ defmodule WeChat do
   end
 
   defp setup_httpclient(%Request{uri: %URI{path: "sns/oauth2/component/" <> _}} = request) do
+    {Http.component_client(request), request}
+  end
+
+  defp setup_httpclient(%Request{uri: %URI{path: "/sns/component/" <> _}} = request) do
+    {Http.component_client(request), request}
+  end
+
+  defp setup_httpclient(%Request{uri: %URI{path: "sns/component/" <> _}} = request) do
     {Http.component_client(request), request}
   end
 
