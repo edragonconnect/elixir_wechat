@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.0 (2020-01-15)
+
+* Fix Elixir 1.11 compilation warnings
+
 ## v0.3.1 (2020-12-16)
 
 * Fix WeChat.Registry to use :ets as a global storage instead of Elixir Registry
