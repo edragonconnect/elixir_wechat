@@ -3,8 +3,6 @@ defmodule WeChat.Application do
 
   use Application
 
-  import Supervisor.Spec, warn: false
-
   def start(_type, _args) do
     child_spec = [
       spec_registry(),
@@ -33,7 +31,7 @@ defmodule WeChat.Application do
   end
 
   defp spec_registry() do
-    worker(WeChat.Registry, [])
+    WeChat.Registry
   end
 
 end

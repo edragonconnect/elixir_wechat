@@ -6,7 +6,7 @@ defmodule WeChat.Registry do
 
   alias WeChat.Utils
 
-  def start_link() do
+  def start_link([]) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
