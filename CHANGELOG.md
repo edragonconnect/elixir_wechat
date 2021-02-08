@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.1 (2020-02-08)
+
+* Fix some cases fail to get component `access_token` from hub [#8](https://github.com/edragonconnect/elixir_wechat/pull/8)
+
 ## v0.4.0 (2020-01-15)
 
 * Fix Elixir 1.11 compilation warnings
