@@ -295,14 +295,25 @@ defmodule WeChat.Storage.DefaultHubConnector do
     ])
   end
 
-  defp response_to_access_token({:ok, %{status: 200, body: %{"access_token" => access_token} = body}})
-       when access_token != nil and access_token != "" do
+  defp response_to_access_token(
+         {:ok,
+          %{
+            status: 200,
+            body: %{
+              "access_token" => access_token,
+              "timestamp" => timestamp,
+              "expires_in" => expires_in
+            }
+          }}
+       )
+       when access_token != nil and access_token != "" and
+              is_integer(timestamp) and is_integer(expires_in) do
     {
       :ok,
       %WeChat.Token{
         access_token: access_token,
-        timestamp: Map.get(body, "timestamp"),
-        expires_in: Map.get(body, "expires_in")
+        timestamp: timestamp,
+        expires_in: expires_in
       }
     }
   end
@@ -340,15 +351,23 @@ defmodule WeChat.Storage.DefaultHubConnector do
     }
   end
 
-  defp response_to_ticket({:ok, %{status: 200, body: %{"ticket" => ticket} = body}})
-       when ticket != nil and ticket != "" do
+  defp response_to_ticket(
+         {:ok,
+          %{
+            status: 200,
+            body:
+              %{"ticket" => ticket, "timestamp" => timestamp, "expires_in" => expires_in} = body
+          }}
+       )
+       when ticket != nil and ticket != "" and
+              is_integer(timestamp) and is_integer(expires_in) do
     {
       :ok,
       %WeChat.Ticket{
         value: ticket,
         type: Map.get(body, "type"),
-        timestamp: Map.get(body, "timestamp"),
-        expires_in: Map.get(body, "expires_in")
+        timestamp: timestamp,
+        expires_in: expires_in
       }
     }
   end
