@@ -32,7 +32,7 @@ defmodule WeChat.Component do
       """
       defdelegate expires_in(), to: WeChat
 
-      defoverridable [request: 2, expires_in: 0]
+      defoverridable request: 2, expires_in: 0
     end
   end
 
@@ -48,13 +48,13 @@ defmodule WeChat.Component do
 
   def fetch_component_access_token(appid, {adapter_storage, args}) do
     case adapter_storage.fetch_component_access_token(appid, args) do
-      {:ok, %WeChat.Token{access_token: access_token}} = token when access_token != nil ->
-        token
-
       {:ok, %WeChat.Token{access_token: nil}} ->
         component_access_token = remote_get_component_access_token(appid, adapter_storage, args)
         Logger.info("get component_access_token from remote: #{inspect(component_access_token)}")
         component_access_token
+
+      {:ok, %WeChat.Token{access_token: _}} = token ->
+        token
 
       {:error, error} ->
         {:error, error}
@@ -79,10 +79,15 @@ defmodule WeChat.Component do
         case result do
           {:ok, response} ->
             access_token = Map.get(response.body, "component_access_token")
+            expires_in = Map.get(response.body, "expires_in")
 
             {
               :ok,
-              %WeChat.Token{access_token: access_token}
+              %WeChat.Token{
+                access_token: access_token,
+                expires_in: expires_in,
+                timestamp: Utils.now_unix()
+              }
             }
 
           {:error, error} ->
@@ -128,7 +133,8 @@ defmodule WeChat.Component do
       {:ok, %WeChat.Token{access_token: access_token}} when access_token != nil ->
         result
 
-      {:ok, %WeChat.Token{access_token: nil, refresh_token: refresh_token}} when refresh_token != nil ->
+      {:ok, %WeChat.Token{access_token: nil, refresh_token: refresh_token}}
+      when refresh_token != nil ->
         refresh_or_refetch_token_to_refresh(
           appid,
           authorizer_appid,
@@ -219,7 +225,6 @@ defmodule WeChat.Component do
   end
 
   defp find_and_refresh_access_token(appid, authorizer_appid, adapter_storage, args) do
-
     behaviours = adapter_storage.module_info[:attributes][:behaviour]
 
     if WeChat.Storage.ComponentClient in behaviours do
