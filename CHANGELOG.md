@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.2 (2020-03-03)
+
+* Fix input invalid `access_token` when call sns userinfo and auth API made infinity retry
+
 ## v0.4.1 (2020-02-08)
 
 * Fix some cases fail to get component `access_token` from hub [#8](https://github.com/edragonconnect/elixir_wechat/pull/8)
