@@ -129,7 +129,8 @@ defmodule WeChat.Http.Middleware.Common do
     end
   end
 
-  defp populate_access_token(env, %Request{uri: %URI{path: "/sns/userinfo"}} = request) do
+  defp populate_access_token(env, %Request{uri: %URI{path: path}} = request)
+       when path in ["/sns/userinfo", "/sns/auth"] do
     # Use oauth authorized access_token to fetch user information,
     # in this case, we don't need to populate the general access_token.
     {env, request}
@@ -320,6 +321,18 @@ defmodule WeChat.Http.Middleware.Common do
   end
 
   defp rerun_when_token_expire(
+         _env,
+         _next,
+         %Request{uri: %{path: path}},
+         %{"errcode" => errcode},
+         _request_query
+       )
+       when path in ["/sns/userinfo", "/sns/auth"] and errcode in [40001, 42001, 40014] do
+    # ignore retry when the access_token put from external
+    :no_retry
+  end
+
+  defp rerun_when_token_expire(
          env,
          next,
          %Request{
@@ -341,7 +354,12 @@ defmodule WeChat.Http.Middleware.Common do
 
     refresh_result =
       if authorizer_appid != nil do
-        adapter_storage.refresh_access_token(appid, authorizer_appid, expired_access_token, args)
+        adapter_storage.refresh_access_token(
+          appid,
+          authorizer_appid,
+          expired_access_token,
+          args
+        )
       else
         adapter_storage.refresh_access_token(appid, expired_access_token, args)
       end
