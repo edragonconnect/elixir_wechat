@@ -129,7 +129,8 @@ defmodule WeChat.Http.Middleware.Common do
     end
   end
 
-  defp populate_access_token(env, %Request{uri: %URI{path: "/sns/userinfo"}} = request) do
+  defp populate_access_token(env, %Request{uri: %URI{path: path}} = request)
+       when path in ["/sns/userinfo", "/sns/auth"] do
     # Use oauth authorized access_token to fetch user information,
     # in this case, we don't need to populate the general access_token.
     {env, request}
@@ -337,22 +338,31 @@ defmodule WeChat.Http.Middleware.Common do
     # errcode from WeChat 40001/42001: expired access_token
     # errcode from WeChat 40014: invalid access_token
     #
-    expired_access_token = Keyword.get(request_query, :access_token)
+    if request.uri.path in ["/sns/userinfo", "/sns/auth"] do
+      :no_retry
+    else
+      expired_access_token = Keyword.get(request_query, :access_token)
 
-    refresh_result =
-      if authorizer_appid != nil do
-        adapter_storage.refresh_access_token(appid, authorizer_appid, expired_access_token, args)
-      else
-        adapter_storage.refresh_access_token(appid, expired_access_token, args)
+      refresh_result =
+        if authorizer_appid != nil do
+          adapter_storage.refresh_access_token(
+            appid,
+            authorizer_appid,
+            expired_access_token,
+            args
+          )
+        else
+          adapter_storage.refresh_access_token(appid, expired_access_token, args)
+        end
+
+      case refresh_result do
+        {:ok, %WeChat.Token{access_token: new_access_token}} ->
+          request = Map.put(request, :access_token, new_access_token)
+          execute(env, next, request)
+
+        {:error, error} ->
+          {:error, error}
       end
-
-    case refresh_result do
-      {:ok, %WeChat.Token{access_token: new_access_token}} ->
-        request = Map.put(request, :access_token, new_access_token)
-        execute(env, next, request)
-
-      {:error, error} ->
-        {:error, error}
     end
   end
 
