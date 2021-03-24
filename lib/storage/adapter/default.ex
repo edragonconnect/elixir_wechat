@@ -318,6 +318,17 @@ defmodule WeChat.Storage.DefaultHubConnector do
     }
   end
 
+  defp response_to_access_token({:ok, %{status: 200, body: %{"access_token" => _access_token}}}) do
+    {
+      :error,
+      %Error{
+        reason: "invalid_access_token",
+        errcode: -1,
+        message: "check response failed, invalid value of access_token"
+      }
+    }
+  end
+
   defp response_to_access_token(
          {:ok,
           %{
