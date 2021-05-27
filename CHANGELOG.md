@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.3 (2020-05-27)
+
+* Fix authorizer_appid was mistaken for component appid when set appid param in query string
+
 ## v0.4.2 (2020-03-03)
 
 * Fix input invalid `access_token` when call sns userinfo and auth API made infinity retry
