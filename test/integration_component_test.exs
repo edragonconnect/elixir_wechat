@@ -294,4 +294,20 @@ defmodule WeChat.Component.IntegrationTest do
     token = WeChat.Registry.read_from_local(:fetch_component_access_token, [@component_appid, ""])
     assert token.access_token != nil and token.timestamp != nil and token.expires_in != nil
   end
+
+  test "component fetch oauth2 access_token by invalid info" do
+    {:ok, response} =
+      TestDynamicComponentClient.request(
+        :get,
+        url: "/sns/oauth2/component/access_token",
+        query: [
+          appid: "fake_authorizer_appid",
+          component_appid: @component_appid,
+          code: "invalid_code",
+          grant_type: "authorization_code"
+        ]
+      )
+    assert response.body["errcode"] == 40013 and
+             response.body["errmsg"] =~ ~s/invalid appid/
+  end
 end

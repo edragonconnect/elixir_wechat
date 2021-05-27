@@ -14,6 +14,11 @@ defmodule TestComponentClient2 do
     adapter_storage: {:default, System.fetch_env!("TEST_HUB_URL")}
 end
 
+defmodule TestDynamicComponentClient do
+  use WeChat.Component,
+    adapter_storage: {:default, System.fetch_env!("TEST_HUB_URL")}
+end
+
 defmodule CustomExpiresInComponentClient do
   use WeChat.Component,
     appid: System.fetch_env!("TEST_COMPONENT_APPID"),

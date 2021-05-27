@@ -453,7 +453,7 @@ defmodule WeChat do
 
     query = options[:query] || []
 
-    appid = options[:appid] || Keyword.get(query, :appid)
+    appid = options[:appid] || query[:component_appid] || query[:appid]
 
     %Request{
       method: check_method_opt(method),
