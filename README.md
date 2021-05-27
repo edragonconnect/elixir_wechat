@@ -51,7 +51,7 @@ Notice:
 ```elixir
 def deps do
   [
-   {:elixir_wechat, "~> 0.3"}
+   {:elixir_wechat, "~> 0.4"}
   ]
 end
 ```
@@ -99,18 +99,22 @@ GET "/client/ticket"
 ```
 
 For example, assume that the above setup server is running as
-"http://localhost:4000", now let's invoke a detailed WeChat's API as an example
-from the `client` side.
+"http://localhost:4000", now let's invoke the [get material list](https://developers.weixin.qq.com/doc/offiaccount/Asset_Management/Get_materials_list.html)
+API as an example from the `client` side.
 
+```text
+POST /cgi-bin/material/batchget_material?access_token=ACCESS_TOKEN
+Host: api.weixin.qq.com
+Scheme: https
+
+Body: {
+  "type": "image",
+  "offset": 0,
+  "count": 10
+}
 ```
-POST "https://api.weixin.qq.com/cgi-bin/material/batchget_material"
 
-QueryString: access_token="ACCESS_TOKEN"
-
-Body: {"type": "image", "offset": 0, "count": 10}
-```
-
-#### As `common` client application
+#### As a `common` client application
 
 ```elixir
 defmodule MyClient do
@@ -138,13 +142,13 @@ WeChat.request(
 )
 ```
 
-#### As `component` client application
+#### As a `component` client application
 
 ```elixir
 defmodule MyComponentClient do
   use WeChat.Component,
     adapter_storage: {:default, "http://localhost:4000"},
-    appid: "MyAppID",
+    appid: "MyComponentAppID",
     authorizer_appid: "MyAuthorizerAppID"
 end
 
@@ -160,7 +164,7 @@ Or use `WeChat.request/2` directly
 ```elixir
 WeChat.request(
   :post,
-  appid: "MyAppID",
+  appid: "MyComponentAppID",
   authorizer_appid: "MyAuthorizerAppID",
   adapter_storage: {:default, "http://localhost:4000"},
   url: "/cgi-bin/material/batchget_material",
@@ -174,10 +178,11 @@ refresh `access_token` from self-host centralization nodes, and then self-host
 centralization nodes will maintain the life cycle of a fresh `access_token`.
 
 The default adapter storage `{:default, "http://localhost:4000"}` is
-implemented as a client to the hub server(s) via some predefined HTTP API
-functions, the `WeChat.Storage.Adapter.DefaultClient` is used for `common`
-application, and the `WeChat.Storage.Adapter.DefaultComponentClient` is used
-for `component` application.
+implemented as a client connects to the self-host hub servers via some predefined HTTP API
+functions:
+  
+  * The `WeChat.Storage.Adapter.DefaultClient` is used for `common` application.
+  * The `WeChat.Storage.Adapter.DefaultComponentClient` is used for `component` application.
 
 In **general** use, you need to define your adapter storage implemented the
 corresponding behaviour, the aim of this design to adapt as much as you want.
