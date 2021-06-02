@@ -15,7 +15,7 @@ defmodule WeChat.Http do
         {Tesla.Middleware.Retry, delay: 500, max_retries: 10, should_retry: &match_should_retry?/1},
         {WeChat.Http.Middleware.Common, request}
       ],
-      WeChat.Application.http_adapter()
+      Application.http_adapter()
     )
   end
 
@@ -26,7 +26,7 @@ defmodule WeChat.Http do
         {Tesla.Middleware.Retry, delay: 500, max_retries: 10, should_retry: &match_should_retry?/1},
         {WeChat.Http.Middleware.Component, request},
       ],
-      WeChat.Application.http_adapter()
+      Application.http_adapter()
     )
   end
 
