@@ -2,7 +2,8 @@
 
 ## v0.4.4 (2021-06-02)
 
-* Fix warning internally used tesla/httpc when ssl connect to self-hub
+* Fix OTP24 warning internally used tesla/httpc when ssl connect to self-hub, now use
+  tesla finch adapter for all http requests
 
 ## v0.4.3 (2021-05-27)
 
