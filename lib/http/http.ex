@@ -10,25 +10,24 @@ defmodule WeChat.Http do
 
   @spec client(request :: WeChat.Request.t()) :: term()
   def client(request) do
-    Tesla.client([
-      {Tesla.Middleware.Retry, delay: 500, max_retries: 10, should_retry: &match_should_retry?/1},
-      {WeChat.Http.Middleware.Common, request}
-    ], adapter())
+    Tesla.client(
+      [
+        {Tesla.Middleware.Retry, delay: 500, max_retries: 10, should_retry: &match_should_retry?/1},
+        {WeChat.Http.Middleware.Common, request}
+      ],
+      WeChat.Application.http_adapter()
+    )
   end
 
   @spec component_client(request :: WeChat.Request.t()) :: term()
   def component_client(request) do
-    Tesla.client([
-      {Tesla.Middleware.Retry, delay: 500, max_retries: 10, should_retry: &match_should_retry?/1},
-      {WeChat.Http.Middleware.Component, request},
-    ], adapter())
-  end
-
-  defp adapter() do
-    {
-      Tesla.Adapter.Finch,
-      [name: Application.http_name(), receive_timeout: 15_000]
-    }
+    Tesla.client(
+      [
+        {Tesla.Middleware.Retry, delay: 500, max_retries: 10, should_retry: &match_should_retry?/1},
+        {WeChat.Http.Middleware.Component, request},
+      ],
+      WeChat.Application.http_adapter()
+    )
   end
 
   # for Tesla/Finch adapter current implements

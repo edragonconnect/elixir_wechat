@@ -288,11 +288,14 @@ defmodule WeChat.Storage.DefaultHubConnector do
   end
 
   defp client(hub_base_url) do
-    Tesla.client([
-      {Tesla.Middleware.BaseUrl, hub_base_url},
-      {Tesla.Middleware.Retry, delay: 500, max_retries: 10},
-      Tesla.Middleware.JSON
-    ])
+    Tesla.client(
+      [
+        {Tesla.Middleware.BaseUrl, hub_base_url},
+        {Tesla.Middleware.Retry, delay: 500, max_retries: 10},
+        Tesla.Middleware.JSON
+      ],
+      WeChat.Application.http_adapter()
+    )
   end
 
   defp response_to_access_token(

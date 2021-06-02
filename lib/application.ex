@@ -12,7 +12,19 @@ defmodule WeChat.Application do
     Supervisor.start_link(child_spec, strategy: :one_for_one)
   end
 
-  def http_name() do
+  def http_adapter(opts \\ []) do
+    opts =
+      opts
+      |> Keyword.put(:name, http_name())
+      |> Keyword.put_new(:receive_timeout, 15_000)
+
+    {
+      Tesla.Adapter.Finch,
+      opts
+    }
+  end
+
+  defp http_name() do
     __MODULE__.Finch
   end
 
