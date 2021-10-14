@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.5 (2021-10-14)
+
+* Simplify dependency by removing `:timex`.
+
 ## v0.4.4 (2021-06-02)
 
 * Fix OTP24 warning internally used tesla/httpc when ssl connect to self-hub, now use
