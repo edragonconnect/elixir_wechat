@@ -32,7 +32,6 @@ defmodule WeChat.MixProject do
       {:tesla, "~> 1.4"},
       {:finch, "~> 0.5"},
       {:jason, "~> 1.1"},
-      {:timex, "~> 3.6"},
       {:decorator, "~> 1.3"},
       {:plug, "~> 1.10", optional: true},
       {:mock, "~> 0.3", only: :test},

@@ -1,8 +1,6 @@
 defmodule WeChat.Utils do
   @moduledoc false
 
-  use Timex
-
   @random_alphanumeric Enum.concat([?a..?z, ?A..?Z, 48..57])
 
   alias WeChat.{JSSDKSignature, CardSignature}
@@ -14,7 +12,7 @@ defmodule WeChat.Utils do
   end
 
   def now_unix() do
-    Timex.to_unix(Timex.now())
+    System.os_time(:second)
   end
 
   @doc """
