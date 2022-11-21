@@ -64,6 +64,7 @@ if Code.ensure_loaded?(Plug) do
         query: [access_token: access_token]
       )
       |> case do
+        {:ok, %{status: 200, body: %{"errcode" => 40001}}} -> true
         {:ok, %{status: 200, body: %{"errcode" => 42001}}} -> true
         _ -> false
       end
