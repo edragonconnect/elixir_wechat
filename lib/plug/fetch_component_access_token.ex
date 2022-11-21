@@ -23,9 +23,7 @@ if Code.ensure_loaded?(Plug) do
 
             {:error, %WeChat.Error{} = error} ->
               Logger.error(
-                "fetch access token occurs an error: #{inspect(error)} with query params: #{
-                  inspect(query_params)
-                }"
+                "fetch access token occurs an error: #{inspect(error)} with query params: #{inspect(query_params)}"
               )
 
               error
@@ -47,10 +45,7 @@ if Code.ensure_loaded?(Plug) do
     end
 
     defp fetch(_, _) do
-      {
-        :error,
-        %WeChat.Error{reason: "invalid_request"}
-      }
+      {:error, %WeChat.Error{reason: "invalid_request"}}
     end
   end
 end

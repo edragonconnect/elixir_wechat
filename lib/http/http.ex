@@ -12,7 +12,8 @@ defmodule WeChat.Http do
   def client(request) do
     Tesla.client(
       [
-        {Tesla.Middleware.Retry, delay: 500, max_retries: 10, should_retry: &match_should_retry?/1},
+        {Tesla.Middleware.Retry,
+         delay: 500, max_retries: 10, should_retry: &match_should_retry?/1},
         {WeChat.Http.Middleware.Common, request}
       ],
       Application.http_adapter()
@@ -23,8 +24,21 @@ defmodule WeChat.Http do
   def component_client(request) do
     Tesla.client(
       [
-        {Tesla.Middleware.Retry, delay: 500, max_retries: 10, should_retry: &match_should_retry?/1},
-        {WeChat.Http.Middleware.Component, request},
+        {Tesla.Middleware.Retry,
+         delay: 500, max_retries: 10, should_retry: &match_should_retry?/1},
+        {WeChat.Http.Middleware.Component, request}
+      ],
+      Application.http_adapter()
+    )
+  end
+
+  @spec component_client :: term()
+  def component_client do
+    Tesla.client(
+      [
+        {Tesla.Middleware.Retry,
+         delay: 500, max_retries: 10, should_retry: &match_should_retry?/1},
+        Tesla.Middleware.JSON
       ],
       Application.http_adapter()
     )

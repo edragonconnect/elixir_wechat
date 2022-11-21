@@ -3,13 +3,17 @@ if Code.ensure_loaded?(Plug) do
     @moduledoc false
 
     use Plug.Router
-
-    alias WeChat.Plug.{FetchAccessToken, RefreshAccessToken, FetchComponentAccessToken, FetchTicket}
-
     alias WeChat.Url
 
-    plug(:match)
+    alias WeChat.Plug.{
+      FetchAccessToken,
+      RefreshAccessToken,
+      FetchComponentAccessToken,
+      RefreshComponentAccessToken,
+      FetchTicket
+    }
 
+    plug(:match)
     plug(:dispatch, builder_opts())
 
     get Url.to_fetch_access_token() do
@@ -22,6 +26,10 @@ if Code.ensure_loaded?(Plug) do
 
     get Url.to_fetch_component_access_token() do
       Plug.run(conn, [{FetchComponentAccessToken, opts}])
+    end
+
+    post Url.to_refresh_component_access_token() do
+      Plug.run(conn, [{RefreshComponentAccessToken, opts}])
     end
 
     get Url.to_fetch_ticket() do

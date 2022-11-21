@@ -188,6 +188,11 @@ defmodule WeChat.Storage.Adapter.DefaultComponentClient do
   end
 
   @impl true
+  def refresh_component_access_token(appid, component_access_token, hub_base_url) do
+    Connector.refresh_component_access_token(appid, component_access_token, hub_base_url)
+  end
+
+  @impl true
   @decorate cache()
   def fetch_ticket(appid, authorizer_appid, type, hub_base_url) do
     # Currently, `type` supports "jsapi" | "wx_card"
@@ -204,9 +209,7 @@ defmodule WeChat.Storage.DefaultHubConnector do
 
   def refresh_access_token(appid, access_token, hub_base_url) do
     Logger.info(
-      "send refresh_token request to WeChat hub for appid: #{inspect(appid)}, access_token: #{
-        inspect(access_token)
-      }"
+      "send refresh_token request to WeChat hub for appid: #{inspect(appid)}, access_token: #{inspect(access_token)}"
     )
 
     token =
@@ -224,9 +227,7 @@ defmodule WeChat.Storage.DefaultHubConnector do
 
   def refresh_access_token(appid, authorizer_appid, access_token, hub_base_url) do
     Logger.info(
-      "send refresh_token request to WeChat hub for appid: #{inspect(appid)} with authorizer_appid: #{
-        inspect(authorizer_appid)
-      }, access_token: #{inspect(access_token)}"
+      "send refresh_token request to WeChat hub for appid: #{inspect(appid)} with authorizer_appid: #{inspect(authorizer_appid)}, access_token: #{inspect(access_token)}"
     )
 
     token =
@@ -240,9 +241,7 @@ defmodule WeChat.Storage.DefaultHubConnector do
       |> response_to_access_token()
 
     Logger.info(
-      "received access token from WeChat hub: #{inspect(token)} for appid: #{inspect(appid)} with authorizer_appid: #{
-        inspect(authorizer_appid)
-      }"
+      "received access token from WeChat hub: #{inspect(token)} for appid: #{inspect(appid)} with authorizer_appid: #{inspect(authorizer_appid)}"
     )
 
     token
@@ -268,6 +267,16 @@ defmodule WeChat.Storage.DefaultHubConnector do
     hub_base_url
     |> client()
     |> Tesla.get(Url.to_fetch_component_access_token(), query: [appid: appid])
+    |> response_to_access_token()
+  end
+
+  def refresh_component_access_token(appid, access_token, hub_base_url) do
+    hub_base_url
+    |> client()
+    |> Tesla.post(
+      Url.to_refresh_component_access_token(),
+      %{appid: appid, access_token: access_token}
+    )
     |> response_to_access_token()
   end
 
