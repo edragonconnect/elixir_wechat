@@ -32,18 +32,6 @@ defmodule WeChat.Http do
     )
   end
 
-  @spec component_client :: term()
-  def component_client do
-    Tesla.client(
-      [
-        {Tesla.Middleware.Retry,
-         delay: 500, max_retries: 10, should_retry: &match_should_retry?/1},
-        Tesla.Middleware.JSON
-      ],
-      Application.http_adapter()
-    )
-  end
-
   # for Tesla/Finch adapter current implements
   defp match_should_retry?({:error, %Error{reason: "timeout"}}), do: true
   defp match_should_retry?({:error, %Error{reason: "socket closed"}}), do: true
