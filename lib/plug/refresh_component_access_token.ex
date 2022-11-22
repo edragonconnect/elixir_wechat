@@ -13,7 +13,7 @@ if Code.ensure_loaded?(Plug) do
 
       result =
         try do
-          case refresh(body, adapter_storage) do
+          case refresh_if_expired(body, adapter_storage) do
             {:ok, token} ->
               %{
                 "access_token" => token.access_token,
@@ -39,7 +39,7 @@ if Code.ensure_loaded?(Plug) do
       |> halt()
     end
 
-    defp refresh(%{"appid" => appid, "access_token" => access_token}, adapter_storage) do
+    defp refresh_if_expired(%{"appid" => appid, "access_token" => access_token}, adapter_storage) do
       comp_adapter_storage = adapter_storage[:component]
       token = WeChat.Component.fetch_component_access_token(appid, comp_adapter_storage)
 
@@ -52,7 +52,7 @@ if Code.ensure_loaded?(Plug) do
       end
     end
 
-    defp refresh(_, _) do
+    defp refresh_if_expired(_, _) do
       {:error, %WeChat.Error{reason: "invalid_request"}}
     end
 

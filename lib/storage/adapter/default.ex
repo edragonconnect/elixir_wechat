@@ -188,6 +188,7 @@ defmodule WeChat.Storage.Adapter.DefaultComponentClient do
   end
 
   @impl true
+  @decorate cache()
   def refresh_component_access_token(appid, component_access_token, hub_base_url) do
     Connector.refresh_component_access_token(appid, component_access_token, hub_base_url)
   end
