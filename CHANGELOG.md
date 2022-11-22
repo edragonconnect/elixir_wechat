@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.6 (2022-11-22)
+
+* Fix `WeChat.Storage.Adapter.DefaultComponentClient.refresh_component_access_token/3` undefined when occur access token expired
+  in client side.
+
 ## v0.4.5 (2021-10-14)
 
 * Simplify dependency by removing `:timex`.
