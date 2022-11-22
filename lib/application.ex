@@ -30,6 +30,7 @@ defmodule WeChat.Application do
 
   defp spec_http_client() do
     app = Application.get_application(__MODULE__)
+
     {
       Finch,
       pools: %{
@@ -45,5 +46,4 @@ defmodule WeChat.Application do
   defp spec_registry() do
     WeChat.Registry
   end
-
 end

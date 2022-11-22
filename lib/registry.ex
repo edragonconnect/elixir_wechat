@@ -1,7 +1,7 @@
 defmodule WeChat.Registry do
   @moduledoc false
 
-  use Decorator.Define, [cache: 0]
+  use Decorator.Define, cache: 0
   use GenServer
 
   alias WeChat.Utils
@@ -25,6 +25,7 @@ defmodule WeChat.Registry do
           value = unquote(body)
           write_to_local(key, value)
           value
+
         value ->
           # read from local registry
           {:ok, value}
@@ -67,6 +68,12 @@ defmodule WeChat.Registry do
     |> use_cache_if_not_expired()
   end
 
+  def read_from_local(:refresh_component_access_token, [appid, _access_token, _hub_url]) do
+    key = key_component_access_token([appid])
+    delete(key)
+    {key, nil}
+  end
+
   def read_from_local(:fetch_ticket, [appid, type, _hub_url]) do
     [appid, type]
     |> key_ticket()
@@ -84,6 +91,7 @@ defmodule WeChat.Registry do
   def write_to_local(key, {:ok, value}) do
     :ets.insert(__MODULE__, {key, value})
   end
+
   def write_to_local(_key, _) do
     # ignore error case
     :ok
@@ -102,7 +110,7 @@ defmodule WeChat.Registry do
   end
 
   defp expired?(value) do
-    (Utils.now_unix() - value.timestamp) >= value.expires_in
+    Utils.now_unix() - value.timestamp >= value.expires_in
   end
 
   defp delete(key) do
@@ -113,6 +121,7 @@ defmodule WeChat.Registry do
     case :ets.lookup(__MODULE__, key) do
       [] ->
         {key, nil}
+
       [{^key, value}] ->
         {key, value}
     end
@@ -129,5 +138,4 @@ defmodule WeChat.Registry do
       value
     end
   end
-
 end

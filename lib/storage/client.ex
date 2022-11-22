@@ -112,6 +112,12 @@ defmodule WeChat.Storage.ComponentClient do
         end
 
         @impl true
+        def refresh_component_access_token(appid, component_access_token, args) do
+          access_token = "Refresh component access_token by component appid from your persistence..."
+          {:ok, %WeChat.Token{access_token: access_token}}
+        end
+
+        @impl true
         def fetch_ticket(appid, type, args) do
           ticket = "Get jsapi-ticket/card-ticket from your persistence..."
           {:ok, ticket}
@@ -163,6 +169,16 @@ defmodule WeChat.Storage.ComponentClient do
               appid :: String.t(),
               authorizer_appid :: String.t(),
               access_token :: String.t(),
+              args :: term()
+            ) :: {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
+
+
+  @doc """
+  Refresh access_token of WeChat component application.
+  """
+  @callback refresh_component_access_token(
+              appid :: String.t(),
+              component_access_token :: String.t(),
               args :: term()
             ) :: {:ok, %WeChat.Token{}} | {:error, %WeChat.Error{}}
 

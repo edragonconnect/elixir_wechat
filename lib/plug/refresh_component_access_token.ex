@@ -1,19 +1,18 @@
 if Code.ensure_loaded?(Plug) do
-  defmodule WeChat.Plug.FetchComponentAccessToken do
+  defmodule WeChat.Plug.RefreshComponentAccessToken do
     @moduledoc false
 
     use Plug.Builder
-
     require Logger
 
     def call(conn, opts) do
-      conn = fetch_query_params(conn)
+      conn = conn |> super(opts) |> fetch_query_params()
       adapter_storage = opts[:adapter_storage]
-      query_params = conn.query_params
+      body = conn.body_params
 
       result =
         try do
-          case fetch(query_params, adapter_storage) do
+          case refresh_if_expired(body, adapter_storage) do
             {:ok, token} ->
               %{
                 "access_token" => token.access_token,
@@ -23,7 +22,7 @@ if Code.ensure_loaded?(Plug) do
 
             {:error, %WeChat.Error{} = error} ->
               Logger.error(
-                "fetch access token occurs an error: #{inspect(error)} with query params: #{inspect(query_params)}"
+                "fetch access token occurs an error: #{inspect(error)} with body params: #{inspect(body)}"
               )
 
               error
@@ -39,12 +38,19 @@ if Code.ensure_loaded?(Plug) do
       |> halt()
     end
 
-    defp fetch(%{"appid" => appid}, adapter_storage) do
+    defp refresh_if_expired(%{"appid" => appid, "access_token" => access_token}, adapter_storage) do
       comp_adapter_storage = adapter_storage[:component]
-      WeChat.Component.fetch_component_access_token(appid, comp_adapter_storage)
+
+      case WeChat.Component.fetch_component_access_token(appid, comp_adapter_storage) do
+        {:ok, %{access_token: ^access_token}} ->
+          adapter_storage.refresh_component_access_token(appid, access_token, nil)
+
+        token ->
+          token
+      end
     end
 
-    defp fetch(_, _) do
+    defp refresh_if_expired(_, _) do
       {:error, %WeChat.Error{reason: "invalid_request"}}
     end
   end
